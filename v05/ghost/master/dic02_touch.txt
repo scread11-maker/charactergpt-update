@@ -32,7 +32,7 @@
 ＊OnMouseDoubleClick	（Ｒ５）==0
 ＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Head
 ＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Hair
-＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTBustGrab	（Ｒ３）==0&&（Ｒ４）==Bust
 ＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Book
 ＞CharacterGPTDoubleClick	（Ｒ３）==1&&（Ｒ４）==Head
 ＞CharacterGPTDoubleClick	（Ｒ３）==1&&（Ｒ４）==Bust
@@ -40,6 +40,10 @@
 
 ＊CharacterGPTDoubleClick
 ：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
+
+＊CharacterGPTBustGrab
+＄CharacterGPTBustLocalActive	1
+：\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|grab|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊OnMouseMove
 ＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Head
