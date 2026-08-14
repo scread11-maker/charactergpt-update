@@ -1,6 +1,6 @@
 charset,UTF-8
 type,ghost
-name,CharacterGPT Prototype v0.5.20
+name,CharacterGPT Prototype v0.5.23
 sakura.name,CharacterGPT
 kero.name,Owl
 craftman,prototype
