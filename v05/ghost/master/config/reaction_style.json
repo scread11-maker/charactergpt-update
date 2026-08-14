@@ -1,0 +1,9 @@
+{
+  "preferred_length": "short",
+  "max_sentences": 3,
+  "max_examples": 4,
+  "recent_context_seconds": 900,
+  "avoid_repetition": true,
+  "prefer_context_continuity": true,
+  "allow_silent_reaction": true
+}
