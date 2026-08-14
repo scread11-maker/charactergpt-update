@@ -3,6 +3,7 @@
 ＃ Runtime WebSocket: ws://127.0.0.1:8766
 ＃ Character/appearance proxy: http://127.0.0.1:8767/
 ＃ System presentation hotfix: normal system balloons follow CharacterGPT dialogue duration.
+＃ Local appearance HTTP sync is synchronous and callback-free so it cannot interrupt a visible balloon.
 
 ＊OnFirstBoot
 ：\0\s[20]CharacterGPT v0.5.24：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
@@ -14,10 +15,10 @@
 ：\0\s[20]CharacterGPT v0.5.24：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnCharacterGPTOpen
-：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|BOOT]\![execute,http-post,http://127.0.0.1:8767/state/dressup-info,--async=OnCharacterGPTAppearanceSync,--nodescript,--nofile=UTF-8,--param=raw=（CharacterGPTDressupInfoRaw）,--timeout=2]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]CharacterGPT Runtime 已連線。\n左鍵點非觸摸區域可開啟 CharacterGPT 選單。\e
+：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|BOOT]\![execute,http-post,http://127.0.0.1:8767/state/dressup-info,--nodescript,--nofile=UTF-8,--param=raw=（CharacterGPTDressupInfoRaw）,--timeout=2]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]CharacterGPT Runtime 已連線。\n左鍵點非觸摸區域可開啟 CharacterGPT 選單。\e
 
 ＊OnCharacterGPTReconnect
-：\![execute,http-post,http://127.0.0.1:8767/state/dressup-info,--async=OnCharacterGPTAppearanceSync,--nodescript,--nofile=UTF-8,--param=raw=（CharacterGPTDressupInfoRaw）,--timeout=2]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]CharacterGPT Runtime 已重新連線。\e
+：\![execute,http-post,http://127.0.0.1:8767/state/dressup-info,--nodescript,--nofile=UTF-8,--param=raw=（CharacterGPTDressupInfoRaw）,--timeout=2]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]CharacterGPT Runtime 已重新連線。\e
 
 ＊OnCharacterGPTFailure
 ：\0\s[3]CharacterGPT Runtime 尚未連線。\n\q[重新啟動 Bridge,OnStartCharacterGPTBridge]\e
@@ -33,7 +34,7 @@
 ：
 
 ＊OnDressupChanged
-：\![execute,http-post,http://127.0.0.1:8767/state/dressup-changed,--async=OnCharacterGPTAppearanceSync,--nodescript,--nofile=UTF-8,--param=character_id=（Ｒ０）,--param=part=（Ｒ１）,--param=enabled=（Ｒ２）,--param=category=（Ｒ３）,--param=source=（Ｒ４）,--timeout=2]
+：\![execute,http-post,http://127.0.0.1:8767/state/dressup-changed,--nodescript,--nofile=UTF-8,--param=character_id=（Ｒ０）,--param=part=（Ｒ１）,--param=enabled=（Ｒ２）,--param=category=（Ｒ３）,--param=source=（Ｒ４）,--timeout=2]
 
 ＊OnCharacterGPTAppearanceSync
 ：
