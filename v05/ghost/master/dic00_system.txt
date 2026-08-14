@@ -1,18 +1,19 @@
-＃ CharacterGPT Prototype v0.5.24 system hotfix
+＃ CharacterGPT Prototype v0.5.25 system hotfix
 ＃ Direct same-name Bridge startup; no VBS/PowerShell launcher.
 ＃ Runtime WebSocket: ws://127.0.0.1:8766
 ＃ Character/appearance proxy: http://127.0.0.1:8767/
 ＃ System presentation hotfix: normal system balloons follow CharacterGPT dialogue duration.
 ＃ Local appearance HTTP sync is synchronous and callback-free so it cannot interrupt a visible balloon.
+＃ Bust click local-reflex latch is released by response balloon/presentation lifecycle end.
 
 ＊OnFirstBoot
-：\0\s[20]CharacterGPT v0.5.24：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.25：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnBoot
-：\0\s[20]CharacterGPT v0.5.24：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.25：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnGhostChanged
-：\0\s[20]CharacterGPT v0.5.24：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.25：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnCharacterGPTOpen
 ：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|BOOT]\![execute,http-post,http://127.0.0.1:8767/state/dressup-info,--nodescript,--nofile=UTF-8,--param=raw=（CharacterGPTDressupInfoRaw）,--timeout=2]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]CharacterGPT Runtime 已連線。\n左鍵點非觸摸區域可開啟 CharacterGPT 選單。\e
@@ -21,9 +22,11 @@
 ：\![execute,http-post,http://127.0.0.1:8767/state/dressup-info,--nodescript,--nofile=UTF-8,--param=raw=（CharacterGPTDressupInfoRaw）,--timeout=2]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]CharacterGPT Runtime 已重新連線。\e
 
 ＊OnCharacterGPTFailure
+＄CharacterGPTBustClickLatched	0
 ：\0\s[3]CharacterGPT Runtime 尚未連線。\n\q[重新啟動 Bridge,OnStartCharacterGPTBridge]\e
 
 ＊OnCharacterGPTClose
+＄CharacterGPTBustClickLatched	0
 ：\0\s[3]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]CharacterGPT Runtime 已中斷。\e
 
 ＊OnStartCharacterGPTBridge
@@ -43,6 +46,7 @@
 ：
 
 ＊OnCharacterGPTMenu
+＄CharacterGPTBustClickLatched	0
 ：\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\0\s[20]\![set,balloontimeout,0]\![set,choicetimeout,0]CharacterGPT\n\n\q[開始對話,OnOpenChat]\n\q[對話持續時間,OnBalloonDurationMenu]\n\q[設定 API Key,OnConfigureAPIKey]\e
 
 ＊OnBalloonDurationMenu
@@ -73,18 +77,23 @@
 ：\![send,websocket,ws://127.0.0.1:8766,CONFIG|BALLOON|0]
 
 ＊OnCharacterGPTBalloonTimeout
+＄CharacterGPTBustClickLatched	0
 ：\0\b[-1]\1\b[-1]\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]\e
 
 ＊OnBalloonClose
+＄CharacterGPTBustClickLatched	0
 ：\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]
 
 ＊OnBalloonTimeout
+＄CharacterGPTBustClickLatched	0
 ：\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]
 
 ＊OnCharacterGPTSurfaceRestore
+＄CharacterGPTBustClickLatched	0
 ：\0\s[20]\1\s[10]\e
 
 ＊OnOpenChat
+＄CharacterGPTBustClickLatched	0
 ：\![send,websocket,ws://127.0.0.1:8766,COMMAND|OPEN_CHAT]
 
 ＊OnCharacterGPT
@@ -121,4 +130,5 @@
 ：\0\s[3]\![set,balloontimeout,0]CharacterGPT 更新檢查失敗。\n原因：（Ｒ０）\e
 
 ＊OnClose
+＄CharacterGPTBustClickLatched	0
 ：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|CLOSE]\![close,websocket,ws://127.0.0.1:8766]\0\s[5]再見。\-\e
