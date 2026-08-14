@@ -1,25 +1,30 @@
-＃ CharacterGPT Prototype v0.5.25 system hotfix
+＃ CharacterGPT Prototype v0.5.26 system hotfix
 ＃ Direct same-name Bridge startup; no VBS/PowerShell launcher.
 ＃ Runtime WebSocket: ws://127.0.0.1:8766
 ＃ Character/appearance proxy: http://127.0.0.1:8767/
 ＃ System presentation hotfix: normal system balloons follow CharacterGPT dialogue duration.
 ＃ Local appearance HTTP sync is synchronous and callback-free so it cannot interrupt a visible balloon.
 ＃ Bust click local-reflex latch is released by response balloon/presentation lifecycle end.
-＃ Local idle-reading state: 30 seconds without touch/dialogue presentation -> main surface 0.
+＃ Local idle-reading state v2: 30 seconds after the last real interaction -> main surface 0/base1.
+＃ Bridge v0.5.26 raises OnCharacterGPTActivity for native-chat/LLM turns so chat activity also resets the local idle timer.
 
 ＊OnFirstBoot
-：\0\s[20]CharacterGPT v0.5.25：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.26：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnBoot
-：\0\s[20]CharacterGPT v0.5.25：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.26：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnGhostChanged
-：\0\s[20]CharacterGPT v0.5.25：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.26：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnCharacterGPTOpen
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|BOOT]\![execute,http-post,http://127.0.0.1:8767/state/dressup-info,--nodescript,--nofile=UTF-8,--param=raw=（CharacterGPTDressupInfoRaw）,--timeout=2]\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]CharacterGPT Runtime 已連線。\n左鍵點非觸摸區域可開啟 CharacterGPT 選單。\e
 
 ＊OnCharacterGPTReconnect
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![execute,http-post,http://127.0.0.1:8767/state/dressup-info,--nodescript,--nofile=UTF-8,--param=raw=（CharacterGPTDressupInfoRaw）,--timeout=2]\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]CharacterGPT Runtime 已重新連線。\e
 
 ＊OnCharacterGPTFailure
@@ -48,10 +53,14 @@
 
 ＊OnCharacterGPTMenu
 ＄CharacterGPTBustClickLatched	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\0\s[20]\![set,balloontimeout,0]\![set,choicetimeout,0]CharacterGPT\n\n\q[開始對話,OnOpenChat]\n\q[對話持續時間,OnBalloonDurationMenu]\n\q[設定 API Key,OnConfigureAPIKey]\e
 
 ＊OnBalloonDurationMenu
-：\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\0\s[20]\![set,balloontimeout,0]\![set,choicetimeout,0]對話持續時間\n\n\q[10 秒,OnSetBalloon10]\n\q[15 秒（標準）,OnSetBalloon15]\n\q[20 秒,OnSetBalloon20]\n\q[30 秒,OnSetBalloon30]\n\q[60 秒,OnSetBalloon60]\n\q[不自動關閉,OnSetBalloonManual]\n\q[返回,OnCharacterGPTMenu]\e
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,30000,1,OnCharacterGPTIdleReading]\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\0\s[20]\![set,balloontimeout,0]\![set,choicetimeout,0]對話持續時間\n\n\q[10 秒,OnSetBalloon10]\n\q[15 秒（標準）,OnSetBalloon15]\n\q[20 秒,OnSetBalloon20]\n\q[30 秒,OnSetBalloon30]\n\q[60 秒,OnSetBalloon60]\n\q[不自動關閉,OnSetBalloonManual]\n\q[返回,OnCharacterGPTMenu]\e
 
 ＊OnSetBalloon10
 ＄CharacterGPTBalloonTimeoutMs	10000
@@ -79,32 +88,52 @@
 
 ＊OnCharacterGPTBalloonTimeout
 ＄CharacterGPTBustClickLatched	0
-：\0\b[-1]\1\b[-1]\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]\![timerraise,30000,1,OnCharacterGPTIdleReading]\e
+：\0\b[-1]\1\b[-1]\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]\e
 
 ＊OnBalloonClose
 ＄CharacterGPTBustClickLatched	0
-：\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]\![timerraise,30000,1,OnCharacterGPTIdleReading]
+：\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]
 
 ＊OnBalloonTimeout
 ＄CharacterGPTBustClickLatched	0
-：\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]\![timerraise,30000,1,OnCharacterGPTIdleReading]
+：\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]
 
 ＊OnCharacterGPTSurfaceRestore
 ＄CharacterGPTBustClickLatched	0
+＞OnCharacterGPTSurfaceRestoreDo	（CharacterGPTIdleReadingActive）!=1
+：
+
+＊OnCharacterGPTSurfaceRestoreDo
 ：\0\s[20]\1\s[10]\e
 
+＃ Bridge v0.5.26 calls this via a no-balloon local SSTP raise for native chat / LLM turns.
+＃ Touch paths reset the same timer directly in dic02_touch.txt.
+＊OnCharacterGPTActivity
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,30000,1,OnCharacterGPTIdleReading]
+
 ＃ 30-second local idle state. Same-name timerraise calls overwrite/restart this timer.
-＃ If SSP is still talking/choosing/showing a balloon when it fires, defer another 30 seconds rather than interrupting presentation.
+＃ If presentation is still active when 30 seconds elapse, poll once per second;
+＃ do not steal a visible balloon. Once idle wins, cancel any pending surface-20 restore.
 ＊OnCharacterGPTIdleReading
 ＞OnCharacterGPTIdleReadingShow	（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0
-：\![timerraise,30000,1,OnCharacterGPTIdleReading]
+＞OnCharacterGPTIdleReadingWait
+
+＊OnCharacterGPTIdleReadingWait
+＄CharacterGPTIdleReadingPending	1
+：\![timerraise,1000,1,OnCharacterGPTIdleReading]
 
 ＊OnCharacterGPTIdleReadingShow
 ＄CharacterGPTBustClickLatched	0
-：\0\s[0]\e
+＄CharacterGPTIdleReadingActive	1
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\0\s[0]\e
 
 ＊OnOpenChat
 ＄CharacterGPTBustClickLatched	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,COMMAND|OPEN_CHAT]
 
 ＊OnCharacterGPT
@@ -142,4 +171,6 @@
 
 ＊OnClose
 ＄CharacterGPTBustClickLatched	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,0,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,SYSTEM|CLOSE]\![close,websocket,ws://127.0.0.1:8766]\0\s[5]再見。\-\e
