@@ -59,7 +59,7 @@ v0.5.19 semantic calibration
 
 v0.5.20 character profile
 - Runtime character identity is no longer required to live inside Bridge code.
-- On the first LLM request, editable files are created under ghost/master/profile/character/.
+- On the first v0.5.20 loader start, editable files are created under ghost/master/profile/character/.
 - character.md: identity, personality, relationship, speech style, preferences, behavior.
 - appearance.md: appearance, body details, carried objects, companion details.
 - manifest.json: file mapping only.
