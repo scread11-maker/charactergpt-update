@@ -1,4 +1,4 @@
-＃ CharacterGPT v0.5.24 touch/event adapter
+＃ CharacterGPT v0.5.25 touch/event adapter
 ＃ v0.5.7 touch semantics are preserved in the Bridge.
 ＃ Only recognised touch-collision MOVE events are transported.
 ＃ MouseLeave / MouseLeaveAll are LOCAL visual housekeeping only.
@@ -6,7 +6,8 @@
 ＃ During talking/choosing/visible balloon, Leave returns no script at all.
 ＃ Local reflex timing:
 ＃ - Head/Hair keep Runtime's sustained-touch timing.
-＃ - Bust reacts visually immediately. Single-click semantics are deferred briefly so a double click can become grab without leaking a preceding light_touch.
+＃ - Bust reacts visually immediately. Single-click semantics are deferred briefly so a double click becomes canonical grab without leaking a preceding light_touch.
+＃ - Runtime v0.5.24 compatibility: Bust double-click is transported as legacy POINTER|double; Bridge v0.5.25 rewrites the outbound LLM semantic event from heavy_tap to grab.
 ＃ - Book single click reacts visually immediately; semantic meaning remains neutral look_at.
 
 ＊OnMouseClick	（Ｒ５）==0
@@ -57,7 +58,7 @@
 ＊CharacterGPTBustGrab
 ＄CharacterGPTBustClickPending	0
 ＄CharacterGPTBustLocalActive	1
-：\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|grab|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
+：\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊OnMouseMove
 ＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Head
