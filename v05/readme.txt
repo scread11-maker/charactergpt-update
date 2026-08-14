@@ -1,15 +1,20 @@
-CharacterGPT v0.5 online update channel
+charset,UTF-8
+CharacterGPT Prototype v0.5.29 - Local Emotional Context
 
-Baseline: v0.5.24 system presentation hotfix
-Transport URL: raw.githubusercontent.com
+This online-update channel tracks the current CharacterGPT v0.5.x text/config layer.
 
-Ordinary update payload is intentionally text/config only.
-Included: descript, Satori dictionaries, satori_bootconf, satori_conf, config/*.
-Excluded: bridge/*, character/*, profile/*, satori.dll, shell/*.
+Current binary feature baseline:
+- CharacterGPTBridge.exe: v0.5.29 Local Emotional Context
+- CharacterGPTRuntime.exe: v0.5.28 Expression Scale Fix
 
-System balloon behavior:
-- Normal CharacterGPT system notifications follow the configured dialogue duration.
-- Background dress-up synchronization is executed immediately in the same connection script; no delayed timerraise is used to interrupt visible balloons.
-- Failure notifications remain open for readability.
+Local short-term emotional state is stored under ghost/master/profile/emotional_state.json and is not distributed by NAR or network updates.
 
-Dynamic-state interpretation policy is in config/runtime_context_rules.json and can be adjusted online without replacing Bridge binaries.
+Online-update payload includes:
+- ghost/master/descript.txt
+- Satori dictionaries and configuration
+- ghost/master/config/*
+- shell/master/surfaces.txt
+- shell/master/surfacetable.txt
+- readme.txt
+
+Binary executables and user-local character/profile data are not routine network-update payloads.
