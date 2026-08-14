@@ -4,12 +4,16 @@
 ＃ MouseLeave / MouseLeaveAll are LOCAL visual housekeeping only.
 ＃ They never go to Bridge/LLM and never participate in gesture intensity.
 ＃ During talking/choosing/visible balloon, Leave returns no script at all.
+＃ Local reflex timing:
+＃ - Head/Hair keep Runtime's sustained-touch timing.
+＃ - Bust reacts visually on the first MOVE of a continuous touch.
+＃ - Book single click reacts visually immediately; semantic meaning remains neutral look_at.
 
 ＊OnMouseClick	（Ｒ５）==0
 ＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Head
 ＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Hair
-＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Bust
-＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Book
+＞CharacterGPTBustSingleClick	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTBookSingleClick	（Ｒ３）==0&&（Ｒ４）==Book
 ＞CharacterGPTSingleClick	（Ｒ３）==1&&（Ｒ４）==Head
 ＞CharacterGPTSingleClick	（Ｒ３）==1&&（Ｒ４）==Bust
 ＞CharacterGPTSingleClick	（Ｒ３）==1&&（Ｒ４）==Wing
@@ -17,6 +21,13 @@
 
 ＊CharacterGPTSingleClick
 ：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
+
+＊CharacterGPTBustSingleClick
+＄CharacterGPTBustLocalActive	1
+：\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
+
+＊CharacterGPTBookSingleClick
+：\0\s[20]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊OnMouseDoubleClick	（Ｒ５）==0
 ＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Head
@@ -33,7 +44,7 @@
 ＊OnMouseMove
 ＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Head
 ＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Hair
-＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTBustTouchMove	（Ｒ３）==0&&（Ｒ４）==Bust
 ＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Book
 ＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Head
 ＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Bust
@@ -42,12 +53,20 @@
 ＊CharacterGPTTouchMove
 ：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
 
+＊CharacterGPTBustTouchMove
+＞CharacterGPTBustTouchMoveFirst	（CharacterGPTBustLocalActive）!=1
+：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTBustTouchMoveFirst
+＄CharacterGPTBustLocalActive	1
+：\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
 ＃ Local leave reflex restoration.
 ＃ Restore only when no delayed/dialogue UI owns the current expression.
 ＊OnMouseLeave
 ＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Head
 ＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Hair
-＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTLocalLeaveBust	（Ｒ３）==0&&（Ｒ４）==Bust
 ＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Book
 ＞CharacterGPTLocalLeaveOwl	（Ｒ３）==1&&（Ｒ４）==Head
 ＞CharacterGPTLocalLeaveOwl	（Ｒ３）==1&&（Ｒ４）==Bust
@@ -56,10 +75,15 @@
 ＊CharacterGPTLocalLeaveMain
 ：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
 
+＊CharacterGPTLocalLeaveBust
+＄CharacterGPTBustLocalActive	0
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
+
 ＊CharacterGPTLocalLeaveOwl
 ：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\1\s[10]\e）
 
 ＊OnMouseLeaveAll
+＄CharacterGPTBustLocalActive	0
 ：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\1\s[10]\e）
 
 ＃ Hover itself is not a semantic event and produces no script.
