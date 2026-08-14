@@ -1,10 +1,28 @@
-CharacterGPT v0.5 online update channel
+CharacterGPT v0.5 stable online-update channel
 
-Baseline: v0.5.24
-Transport URL: raw.githubusercontent.com
+Baseline: v0.5.24 system presentation hotfix
 
-Ordinary update payload is intentionally text/config only.
-Included: descript, Satori dictionaries, satori_bootconf, config/*.
-Excluded: bridge/*, character/*, profile/*, satori.dll, shell/*.
+This channel distributes only the safe text/configuration layer.
 
-Dynamic-state interpretation policy is in config/runtime_context_rules.json and can be adjusted online without replacing Bridge binaries.
+Included:
+- descript.txt
+- dic00_system.txt
+- dic01_chat.txt
+- dic02_touch.txt
+- satori_bootconf.txt
+- satori_conf.txt
+- config/*
+
+System balloon behavior:
+- Normal CharacterGPT system notifications use the same configured dialogue duration.
+- 10/15/20/30/60 seconds are mirrored in Satori and Runtime.
+- "No automatic close" maps to balloon timeout 0.
+- Background dress-up synchronization remains silent.
+- Failure messages remain open so the error can be read.
+
+Explicitly excluded:
+- bridge/*
+- character/*
+- profile/*
+- satori.dll
+- shell/*
