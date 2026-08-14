@@ -1,4 +1,4 @@
-CharacterGPT v0.5.4 - Local Interaction Dictionary
+CharacterGPT v0.5.23 - Local Interaction Dictionary
 
 Files
 - interaction_rules.json: author/default interpretation rules.
@@ -29,7 +29,7 @@ Book is a special interaction object
 
 Physical target semantics
 - Head = character head
-- Hair = character hair
+- Hair = the character's long hair hanging behind her; not the scalp/top-of-head hair
 - Bust = character chest
 - Book = book held/read by the character
 - Owl.Head = owl head
@@ -55,12 +55,3 @@ v0.5.19 semantic calibration
 - light_tap is accepted as a legacy alias, but new single-click events canonicalize to light_touch.
 - Hair means the long hair hanging behind the character, not hair on top of the head.
 - Book look_at means only a brief glance; interest/reading intent is not assumed.
-
-
-v0.5.20 character profile
-- Runtime character identity is no longer required to live inside Bridge code.
-- On the first v0.5.20 loader start, editable files are created under ghost/master/profile/character/.
-- character.md: identity, personality, relationship, speech style, preferences, behavior.
-- appearance.md: appearance, body details, carried objects, companion details.
-- manifest.json: file mapping only.
-- These files are reloaded on every LLM request and are intentionally outside the network-update manifest after creation.
