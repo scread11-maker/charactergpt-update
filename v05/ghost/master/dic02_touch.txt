@@ -1,4 +1,4 @@
-＃ CharacterGPT v0.5.23 touch/event adapter
+＃ CharacterGPT v0.5.24 touch/event adapter
 ＃ v0.5.7 touch semantics are preserved in the Bridge.
 ＃ Only recognised touch-collision MOVE events are transported.
 ＃ MouseLeave / MouseLeaveAll are LOCAL visual housekeeping only.

@@ -1,0 +1,4 @@
+{
+  "format_version": 1,
+  "dynamic_state_policy": "CURRENT APPEARANCE STATE and DYNAMIC APPEARANCE TRANSITION are authoritative external SSP/Shell state, not autobiographical memory. When a dress-up state changes, treat the earlier state as potentially correct at that earlier time and the new state as correct now. Do not explain the difference as having remembered incorrectly, seen incorrectly, hallucinated, or made a cognitive mistake unless some separate evidence explicitly establishes such a mistake. When a transition block is present, natural wording such as 剛戴上、剛摘下、現在換成 is appropriate when context calls for it. When only CURRENT APPEARANCE STATE is present, simply know the current state without repeatedly announcing that a change just happened."
+}

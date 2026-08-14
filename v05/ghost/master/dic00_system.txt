@@ -1,16 +1,16 @@
-＃ CharacterGPT Prototype v0.5.23
+＃ CharacterGPT Prototype v0.5.24
 ＃ Direct same-name Bridge startup; no VBS/PowerShell launcher.
 ＃ Runtime WebSocket: ws://127.0.0.1:8766
 ＃ Character/appearance proxy: http://127.0.0.1:8767/
 
 ＊OnFirstBoot
-：\0\s[20]CharacterGPT v0.5.23：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.24：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnBoot
-：\0\s[20]CharacterGPT v0.5.23：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.24：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnGhostChanged
-：\0\s[20]CharacterGPT v0.5.23：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.24：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnCharacterGPTOpen
 ：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|BOOT]\![timerraise,700,1,OnCharacterGPTSyncDressup]\0\s[25]CharacterGPT Runtime 已連線。\n左鍵點非觸摸區域可開啟 CharacterGPT 選單。\e
@@ -80,3 +80,4 @@
 ：\![send,websocket,ws://127.0.0.1:8766,CONFIG|CLEARKEY]
 ＊OnClose
 ：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|CLOSE]\![close,websocket,ws://127.0.0.1:8766]\0\s[5]再見。\-\e
+\n＊OnUpdateComplete\n：\0\s[25]CharacterGPT 的網路更新完成了。\n重新切換角色後套用必要的文字層更新。\e\n\n＊OnUpdateFailure\n：\0\s[3]CharacterGPT 網路更新失敗。\n請查看 SSP 的網路更新錯誤訊息。\e\n
