@@ -1,4 +1,4 @@
-＃ CharacterGPT Prototype v0.5.27 system hotfix
+＃ CharacterGPT Prototype v0.5.29 system hotfix
 ＃ Direct same-name Bridge startup; no VBS/PowerShell launcher.
 ＃ Runtime WebSocket: ws://127.0.0.1:8766
 ＃ Character/appearance proxy: http://127.0.0.1:8767/
@@ -9,13 +9,13 @@
 ＃ Bridge v0.5.26 raises OnCharacterGPTActivity for native-chat/LLM turns so chat activity also resets the local idle timer.
 
 ＊OnFirstBoot
-：\0\s[20]CharacterGPT v0.5.27：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.29：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnBoot
-：\0\s[20]CharacterGPT v0.5.27：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.29：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnGhostChanged
-：\0\s[20]CharacterGPT v0.5.27：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+：\0\s[20]CharacterGPT v0.5.29：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnCharacterGPTOpen
 ＄CharacterGPTIdleReadingActive	0
