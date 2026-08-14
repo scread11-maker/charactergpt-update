@@ -1,4 +1,4 @@
-CharacterGPT v0.5.23 - Local Interaction Dictionary
+CharacterGPT v0.5.25 - Local Interaction Dictionary
 
 Files
 - interaction_rules.json: author/default interpretation rules.
@@ -10,7 +10,7 @@ Create same-named files under:
   ghost/master/profile/config/
 Runtime reloads config before each LLM prompt. A user rule/example with the same id replaces the built-in one. Set "enabled": false to disable an inherited rule/example.
 
-v0.5.4 physical gesture grammar
+Physical gesture grammar
 The Runtime resolves physical facts before asking the LLM.
 
 Normal character/Owl collisions
@@ -20,12 +20,17 @@ Normal character/Owl collisions
 - movement otherwise -> stroke (撫摸)
 - movement >= 300 px/s AND at least 2 strong direction reversals -> rough_rub (亂揉)
 
-A fast one-way swipe is intentionally NOT rough_rub. It remains stroke unless repeated direction reversals are detected.
+Bust is a special interaction target
+- single click -> light_touch: one brief gentle touch
+- double click -> grab: one brief grab/squeeze of the character's chest; NOT heavy_tap
+- movement -> gentle_stroke / stroke / rough_rub using the same movement detector
 
 Book is a special interaction object
 - single click -> look_at: look toward the book, NO physical contact
 - double click -> grab: grab/hold the book
 - movement -> gentle_stroke / stroke / rough_rub using the same movement detector
+
+A fast one-way swipe is intentionally NOT rough_rub. It remains stroke unless repeated direction reversals are detected.
 
 Physical target semantics
 - Head = character head
@@ -41,17 +46,21 @@ OBSERVED PHYSICAL EVENT is a Runtime-resolved fact. The LLM must not change whic
 interaction_rules.json describes possible interpretation/reaction framing. Physical contact does not by itself prove motive, romance, sexuality, or relationship status.
 
 Backward compatibility
-Old v0.5.3 events named tap/poke/stroke/rub are normalized in recent context to the v0.5.4 gesture grammar. Existing state.json counters are migrated into the new detailed counters without deleting the legacy fields.
+Old v0.5.3 events named tap/poke/stroke/rub are normalized in recent context to the current gesture grammar. Existing state.json counters are migrated into the detailed counters without deleting legacy fields.
 
-v0.5.6 memory-expression policy
+Memory-expression policy
 - Recent events are private memory, not a narration script.
 - Memory should usually change tone, emotion, expectation, tolerance, or interpretation without being spoken aloud.
 - Previous events should be explicitly mentioned only when they materially determine the current situation (direct repetition, an immediately ignored warning/boundary, direct continuation, or an explicit user callback).
 - For repetition, prefer implicit continuity such as 「還來？」 or a changed tone rather than reciting the event sequence or touch counts.
 - Current physical actions also do not need to be restated in speech; the character may simply react.
 
-
 v0.5.19 semantic calibration
 - light_tap is accepted as a legacy alias, but new single-click events canonicalize to light_touch.
 - Hair means the long hair hanging behind the character, not hair on top of the head.
 - Book look_at means only a brief glance; interest/reading intent is not assumed.
+
+v0.5.25 Bust double-click calibration
+- Bust double click canonicalizes to grab.
+- The preceding single-click candidate is suppressed by the Satori click arbiter when a double click completes.
+- Runtime accepts the resulting grab event as an LLM-triggering physical interaction instead of dropping it.
