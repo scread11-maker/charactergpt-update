@@ -1,11 +1,11 @@
-ghost/master/descript.txt8aa2d4343013a88951997799af1a9767size=257
-ghost/master/dic00_system.txte182d1c796e3824d4a229e5218da67c4size=8092
+ghost/master/descript.txtdaa6bcdf0c67dc800e0eab2f2dfeb6dcsize=257
+ghost/master/dic00_system.txt9d8cee5598ed7369b9d7887730ff134bsize=8260
 ghost/master/dic01_chat.txtbf5d20eb0997c6513b3494c3321ebecbsize=282
-ghost/master/dic02_touch.txt56edd2f4852f0946ca0c21b8c35bb1f2size=8258
+ghost/master/dic02_touch.txt681b22759e9d230a04b8770a29099804size=10714
 ghost/master/satori_bootconf.txtf755e4251a9d8b06706839ca921627f2size=17
 ghost/master/satori_conf.txt64a1a2b9163a0e5db13d59fa6c077aa2size=51
 ghost/master/config/README.txtad1ccac733ed4f60b2c37f5f71ad6701size=3643
 ghost/master/config/interaction_rules.json537f021e19ff3e939054084b4fb32b16size=9536
 ghost/master/config/reaction_examples.jsonlbc092f13286167e9a551daadcce57d01size=5571
 ghost/master/config/reaction_style.json4b72ddcec21850cb02cf56399553e6easize=208
-ghost/master/config/runtime_context_rules.jsond2e24b424eb3b8552f98e73e9e480443size=1602
+ghost/master/config/runtime_context_rules.jsond9c4919dc14014067033706a78959f2asize=1860
