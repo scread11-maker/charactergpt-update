@@ -172,6 +172,20 @@
       ]
     },
     {
+      "id": "bust_grab",
+      "target": "Bust",
+      "gesture": "grab",
+      "meaning": [
+        "使用者雙擊 Bust，代表短暫抓了一下角色的胸部",
+        "這是一次短促抓握，不是重敲，也不是持續揉捏"
+      ],
+      "intensity": 0.65,
+      "notes": [
+        "物理事實是抓了一下胸部；不要改寫成敲擊或只是在上半身附近碰觸。",
+        "抓握本身不自動證明戀愛、性意圖或既有親密關係；仍依近期脈絡判斷。"
+      ]
+    },
+    {
       "id": "book_look_at",
       "target": "Book",
       "gesture": "look_at",
