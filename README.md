@@ -2,22 +2,28 @@
 
 SSP network-update repository for CharacterGPT Prototype.
 
-Current channel: `v05/`
+Current baseline: **v0.5.23**
 
 Published through GitHub Pages at:
 `https://scread11-maker.github.io/charactergpt-update/v05/`
 
-## v0.5.20
+## Stable update policy
 
-v0.5.20 adds an external, hot-reloadable local character profile while preserving the installed v0.5.19 Runtime core.
+The `v05/` channel distributes only the safe text/configuration layer:
+- `ghost/master/descript.txt`
+- `ghost/master/dic00_system.txt`
+- `ghost/master/dic01_chat.txt`
+- `ghost/master/dic02_touch.txt`
+- `ghost/master/satori_bootconf.txt`
+- `ghost/master/config/*`
 
-Editable user files are created on first v0.5.20 start under:
-- `ghost/master/profile/character/character.md`
-- `ghost/master/profile/character/appearance.md`
-- `ghost/master/profile/character/manifest.json`
+The following are intentionally excluded from ordinary SSP network updates:
+- `ghost/master/bridge/*`
+- `ghost/master/character/*`
+- `ghost/master/profile/*`
+- `ghost/master/satori.dll`
+- `shell/*`
 
-The update channel ships only templates under `ghost/master/character_defaults/`; `profile/character/` is intentionally excluded from `updates2.dau`, so future network updates do not overwrite user character settings.
+`character/` is the user's editable persistent character definition. `profile/` is runtime/user state and future memory data. Neither is overwritten by this channel.
 
-For the v0.5.20 bootstrap transition, the update ships a text-based VBS/PowerShell loader. It creates a versioned copy of the already installed v0.5.19 Runtime core locally after the old process has stopped, avoiding any attempt to replace the executable while SSP is updating it. The original Runtime executable is left unchanged.
-
-Persistent user data under `ghost/master/profile/`, credentials, `satori.dll`, and the shell remain outside ordinary network updates.
+Bridge/runtime binary changes continue to use NAR releases until a restart-safe binary updater is implemented.
