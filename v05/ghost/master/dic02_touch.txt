@@ -1,0 +1,67 @@
+＃ CharacterGPT v0.5.19 touch/event adapter
+＃ v0.5.7 touch semantics are preserved in the Bridge.
+＃ Only recognised touch-collision MOVE events are transported.
+＃ MouseLeave / MouseLeaveAll are LOCAL visual housekeeping only.
+＃ They never go to Bridge/LLM and never participate in gesture intensity.
+＃ During talking/choosing/visible balloon, Leave returns no script at all.
+
+＊OnMouseClick	（Ｒ５）==0
+＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Head
+＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Hair
+＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Book
+＞CharacterGPTSingleClick	（Ｒ３）==1&&（Ｒ４）==Head
+＞CharacterGPTSingleClick	（Ｒ３）==1&&（Ｒ４）==Bust
+＞CharacterGPTSingleClick	（Ｒ３）==1&&（Ｒ４）==Wing
+＞OnCharacterGPTMenu
+
+＊CharacterGPTSingleClick
+：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
+
+＊OnMouseDoubleClick	（Ｒ５）==0
+＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Head
+＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Hair
+＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Book
+＞CharacterGPTDoubleClick	（Ｒ３）==1&&（Ｒ４）==Head
+＞CharacterGPTDoubleClick	（Ｒ３）==1&&（Ｒ４）==Bust
+＞CharacterGPTDoubleClick	（Ｒ３）==1&&（Ｒ４）==Wing
+
+＊CharacterGPTDoubleClick
+：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
+
+＊OnMouseMove
+＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Head
+＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Hair
+＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Book
+＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Head
+＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Bust
+＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Wing
+
+＊CharacterGPTTouchMove
+：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＃ Local leave reflex restoration.
+＃ Restore only when no delayed/dialogue UI owns the current expression.
+＊OnMouseLeave
+＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Head
+＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Hair
+＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Book
+＞CharacterGPTLocalLeaveOwl	（Ｒ３）==1&&（Ｒ４）==Head
+＞CharacterGPTLocalLeaveOwl	（Ｒ３）==1&&（Ｒ４）==Bust
+＞CharacterGPTLocalLeaveOwl	（Ｒ３）==1&&（Ｒ４）==Wing
+
+＊CharacterGPTLocalLeaveMain
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
+
+＊CharacterGPTLocalLeaveOwl
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\1\s[10]\e）
+
+＊OnMouseLeaveAll
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\1\s[10]\e）
+
+＃ Hover itself is not a semantic event and produces no script.
+＊OnMouseHover
+：
