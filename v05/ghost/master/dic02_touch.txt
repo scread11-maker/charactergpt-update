@@ -6,13 +6,13 @@
 ＃ During talking/choosing/visible balloon, Leave returns no script at all.
 ＃ Local reflex timing:
 ＃ - Head/Hair keep Runtime's sustained-touch timing.
-＃ - Bust reacts visually on the first MOVE of a continuous touch.
+＃ - Bust reacts visually immediately. Single-click semantics are deferred briefly so a double click can become grab without leaking a preceding light_touch.
 ＃ - Book single click reacts visually immediately; semantic meaning remains neutral look_at.
 
 ＊OnMouseClick	（Ｒ５）==0
 ＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Head
 ＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Hair
-＞CharacterGPTBustSingleClick	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTBustClickCandidate	（Ｒ３）==0&&（Ｒ４）==Bust
 ＞CharacterGPTBookSingleClick	（Ｒ３）==0&&（Ｒ４）==Book
 ＞CharacterGPTSingleClick	（Ｒ３）==1&&（Ｒ４）==Head
 ＞CharacterGPTSingleClick	（Ｒ３）==1&&（Ｒ４）==Bust
@@ -22,9 +22,22 @@
 ＊CharacterGPTSingleClick
 ：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
-＊CharacterGPTBustSingleClick
+＊CharacterGPTBustClickCandidate
+＄CharacterGPTBustClickPending	1
+＄CharacterGPTBustClickCharacter	（Ｒ３）
+＄CharacterGPTBustClickPart	（Ｒ４）
+＄CharacterGPTBustClickX	（Ｒ０）
+＄CharacterGPTBustClickY	（Ｒ１）
 ＄CharacterGPTBustLocalActive	1
-：\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
+：\0\s[2]\![timerraise,600,1,CharacterGPTBustSingleCommit]
+
+＊CharacterGPTBustSingleCommit
+＞CharacterGPTBustSingleCommitDo	（CharacterGPTBustClickPending）==1
+：
+
+＊CharacterGPTBustSingleCommitDo
+＄CharacterGPTBustClickPending	0
+：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（CharacterGPTBustClickCharacter）|（CharacterGPTBustClickPart）|（CharacterGPTBustClickX）|（CharacterGPTBustClickY）]
 
 ＊CharacterGPTBookSingleClick
 ：\0\s[20]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
@@ -42,6 +55,7 @@
 ：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊CharacterGPTBustGrab
+＄CharacterGPTBustClickPending	0
 ＄CharacterGPTBustLocalActive	1
 ：\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|grab|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
