@@ -1,4 +1,4 @@
-＃ CharacterGPT v0.5
+＃ CharacterGPT v0.5.23
 ＃ Chat is handled by the Bridge's native Unicode window.
 ＃ Satori intentionally does not transport user chat text.
 
