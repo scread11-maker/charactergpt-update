@@ -9,3 +9,5 @@ ghost/master/config/interaction_rules.json537f021e19ff3e939054084b4fb32b16size
 ghost/master/config/reaction_examples.jsonlbc092f13286167e9a551daadcce57d01size=5571
 ghost/master/config/reaction_style.json4b72ddcec21850cb02cf56399553e6easize=208
 ghost/master/config/runtime_context_rules.jsond9c4919dc14014067033706a78959f2asize=1860
+shell/master/surfaces.txt22c21147ec2feebf0991bde4481850d7size=14509
+shell/master/surfacetable.txt3de1533992e8f4bf123d2c993deba1dasize=1638
