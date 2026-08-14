@@ -1,4 +1,4 @@
-＃ CharacterGPT v0.5.26 touch/event adapter
+＃ CharacterGPT v0.5.27 touch/event adapter
 ＃ v0.5.7 touch semantics are preserved in the Bridge.
 ＃ Only recognised touch-collision MOVE events are transported.
 ＃ MouseLeave / MouseLeaveAll are LOCAL visual housekeeping only.
@@ -6,12 +6,13 @@
 ＃ During talking/choosing/visible balloon, Leave returns no script at all.
 ＃ Local reflex timing:
 ＃ - Head/Hair keep Runtime's sustained-touch timing.
-＃ - Bust hover is transient: first MOVE switches to the local surprised reflex and leaving restores normally.
-＃ - Bust click is latched: single/double click keeps the surprised reflex after MouseLeave until formal Runtime/LLM presentation owns the expression.
+＃ - Bust hover is transient: first MOVE uses surface 2 (surprised, no hoppe) and leaving restores normally.
+＃ - Bust click is latched with surface 22 (surprised + hoppe, base1) until formal Runtime/LLM presentation owns the expression.
 ＃ - Bust single-click semantics are deferred briefly so a double click becomes canonical grab without leaking a preceding light_touch.
 ＃ - Runtime v0.5.24 compatibility: Bust double-click is transported as legacy POINTER|double; Bridge v0.5.26 rewrites the outbound LLM semantic event from heavy_tap to grab.
 ＃ - Every recognised touch exits idle-reading and restarts the 30-second local idle-reading timer.
-＃ - Book single click reacts immediately with surface 0 (look toward the book); semantic meaning remains neutral look_at.
+＃ - Book single click uses surface 0/base1 and is locally latched for at least 1000ms so MouseLeave cannot erase it immediately.
+＃ - Book MOVE/stroking also reacts locally on first movement with surface 0/base1 while keeping Runtime semantics unchanged.
 
 ＊OnMouseClick	（Ｒ５）==0
 ＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Head
@@ -25,6 +26,8 @@
 
 ＊CharacterGPTSingleClick
 ＄CharacterGPTBustClickLatched	0
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
 ＄CharacterGPTIdleReadingActive	0
 ＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
@@ -37,9 +40,11 @@
 ＄CharacterGPTBustClickY	（Ｒ１）
 ＄CharacterGPTBustLocalActive	1
 ＄CharacterGPTBustClickLatched	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
 ＄CharacterGPTIdleReadingActive	0
 ＄CharacterGPTIdleReadingPending	0
-：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[2]\![timerraise,600,1,CharacterGPTBustSingleCommit]
+：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[22]\![timerraise,600,1,CharacterGPTBustSingleCommit]
 
 ＊CharacterGPTBustSingleCommit
 ＞CharacterGPTBustSingleCommitDo	（CharacterGPTBustClickPending）==1
@@ -51,9 +56,19 @@
 
 ＊CharacterGPTBookSingleClick
 ＄CharacterGPTBustClickLatched	0
+＄CharacterGPTBookLocalActive	1
+＄CharacterGPTBookClickLatched	1
 ＄CharacterGPTIdleReadingActive	0
 ＄CharacterGPTIdleReadingPending	0
-：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[0]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
+：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[0]\![timerraise,1000,1,CharacterGPTBookLocalRelease]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
+
+＊CharacterGPTBookLocalRelease
+＄CharacterGPTBookClickLatched	0
+＞CharacterGPTBookLocalReleaseRestore	（CharacterGPTBookLocalActive）!=1&&（CharacterGPTIdleReadingActive）!=1
+：
+
+＊CharacterGPTBookLocalReleaseRestore
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
 
 ＊OnMouseDoubleClick	（Ｒ５）==0
 ＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Head
@@ -66,6 +81,8 @@
 
 ＊CharacterGPTDoubleClick
 ＄CharacterGPTBustClickLatched	0
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
 ＄CharacterGPTIdleReadingActive	0
 ＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
@@ -74,25 +91,31 @@
 ＄CharacterGPTBustClickPending	0
 ＄CharacterGPTBustLocalActive	1
 ＄CharacterGPTBustClickLatched	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
 ＄CharacterGPTIdleReadingActive	0
 ＄CharacterGPTIdleReadingPending	0
-：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
+：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[22]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊OnMouseMove
 ＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Head
 ＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Hair
 ＞CharacterGPTBustTouchMove	（Ｒ３）==0&&（Ｒ４）==Bust
-＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Book
+＞CharacterGPTBookTouchMove	（Ｒ３）==0&&（Ｒ４）==Book
 ＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Head
 ＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Bust
 ＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Wing
 
 ＊CharacterGPTTouchMove
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
 ＄CharacterGPTIdleReadingActive	0
 ＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
 
 ＊CharacterGPTBustTouchMove
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
 ＄CharacterGPTIdleReadingActive	0
 ＄CharacterGPTIdleReadingPending	0
 ＞CharacterGPTBustTouchMoveFirst	（CharacterGPTBustLocalActive）!=1
@@ -100,9 +123,23 @@
 
 ＊CharacterGPTBustTouchMoveFirst
 ＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
 ＄CharacterGPTIdleReadingActive	0
 ＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTBookTouchMove
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＞CharacterGPTBookTouchMoveFirst	（CharacterGPTBookLocalActive）!=1
+：\![timerraise,30000,1,OnCharacterGPTIdleReading]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTBookTouchMoveFirst
+＄CharacterGPTBookLocalActive	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[0]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
 
 ＃ Local leave reflex restoration.
 ＃ Hover restores on leave, but a completed Bust click latches the local reflex until response presentation lifecycle clears it.
@@ -110,7 +147,7 @@
 ＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Head
 ＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Hair
 ＞CharacterGPTLocalLeaveBust	（Ｒ３）==0&&（Ｒ４）==Bust
-＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Book
+＞CharacterGPTLocalLeaveBook	（Ｒ３）==0&&（Ｒ４）==Book
 ＞CharacterGPTLocalLeaveOwl	（Ｒ３）==1&&（Ｒ４）==Head
 ＞CharacterGPTLocalLeaveOwl	（Ｒ３）==1&&（Ｒ４）==Bust
 ＞CharacterGPTLocalLeaveOwl	（Ｒ３）==1&&（Ｒ４）==Wing
@@ -126,12 +163,21 @@
 ＊CharacterGPTLocalLeaveBustRestore
 ：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
 
+＊CharacterGPTLocalLeaveBook
+＄CharacterGPTBookLocalActive	0
+＞CharacterGPTLocalLeaveBookRestore	（CharacterGPTBookClickLatched）!=1&&（CharacterGPTIdleReadingActive）!=1
+：
+
+＊CharacterGPTLocalLeaveBookRestore
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
+
 ＊CharacterGPTLocalLeaveOwl
 ：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\1\s[10]\e）
 
 ＊OnMouseLeaveAll
 ＄CharacterGPTBustLocalActive	0
-＞CharacterGPTLocalLeaveAllRestore	（CharacterGPTBustClickLatched）!=1
+＄CharacterGPTBookLocalActive	0
+＞CharacterGPTLocalLeaveAllRestore	（CharacterGPTBustClickLatched）!=1&&（CharacterGPTBookClickLatched）!=1&&（CharacterGPTIdleReadingActive）!=1
 ：
 
 ＊CharacterGPTLocalLeaveAllRestore
