@@ -1,7 +1,8 @@
-＃ CharacterGPT Prototype v0.5.24
+＃ CharacterGPT Prototype v0.5.24 system hotfix
 ＃ Direct same-name Bridge startup; no VBS/PowerShell launcher.
 ＃ Runtime WebSocket: ws://127.0.0.1:8766
 ＃ Character/appearance proxy: http://127.0.0.1:8767/
+＃ System presentation hotfix: background state sync must never interrupt visible balloons.
 
 ＊OnFirstBoot
 ：\0\s[20]CharacterGPT v0.5.24：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
@@ -13,31 +14,36 @@
 ：\0\s[20]CharacterGPT v0.5.24：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
 
 ＊OnCharacterGPTOpen
-：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|BOOT]\![timerraise,700,1,OnCharacterGPTSyncDressup]\0\s[25]CharacterGPT Runtime 已連線。\n左鍵點非觸摸區域可開啟 CharacterGPT 選單。\e
+：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|BOOT]\![timerraise,4500,1,OnCharacterGPTSyncDressup]\0\s[25]CharacterGPT Runtime 已連線。\n左鍵點非觸摸區域可開啟 CharacterGPT 選單。\_w[4000]\e
 
 ＊OnCharacterGPTReconnect
-：\![timerraise,700,1,OnCharacterGPTSyncDressup]\0\s[25]CharacterGPT Runtime 已重新連線。\e
+：\![timerraise,3000,1,OnCharacterGPTSyncDressup]\0\s[25]CharacterGPT Runtime 已重新連線。\_w[2500]\e
 
 ＊OnCharacterGPTFailure
 ：\0\s[3]CharacterGPT Runtime 尚未連線。\n\q[重新啟動 Bridge,OnStartCharacterGPTBridge]\e
 
 ＊OnCharacterGPTClose
-：\0\s[3]CharacterGPT Runtime 已中斷。\e
+：\0\s[3]CharacterGPT Runtime 已中斷。\_w[2500]\e
 
 ＊OnStartCharacterGPTBridge
 ：\![open,file,bridge/CharacterGPTBridge.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]
 
+＃ Background dress-up state synchronization.
+＃ These events intentionally return no balloon/surface control and no \e.
 ＊OnNotifyDressupInfo
 ＄CharacterGPTDressupInfoRaw	（Ｒ０）
 ：
 
 ＊OnCharacterGPTSyncDressup
-：\![execute,http-post,http://127.0.0.1:8767/state/dressup-info,--async=OnCharacterGPTAppearanceSync,--nodescript,--nofile=UTF-8,--param=raw=（CharacterGPTDressupInfoRaw）,--timeout=2]\e
+：\![execute,http-post,http://127.0.0.1:8767/state/dressup-info,--async=OnCharacterGPTAppearanceSync,--nodescript,--nofile=UTF-8,--param=raw=（CharacterGPTDressupInfoRaw）,--timeout=2]
 
 ＊OnDressupChanged
-：\![execute,http-post,http://127.0.0.1:8767/state/dressup-changed,--async=OnCharacterGPTAppearanceSync,--nodescript,--nofile=UTF-8,--param=character_id=（Ｒ０）,--param=part=（Ｒ１）,--param=enabled=（Ｒ２）,--param=category=（Ｒ３）,--param=source=（Ｒ４）,--timeout=2]\e
+：\![execute,http-post,http://127.0.0.1:8767/state/dressup-changed,--async=OnCharacterGPTAppearanceSync,--nodescript,--nofile=UTF-8,--param=character_id=（Ｒ０）,--param=part=（Ｒ１）,--param=enabled=（Ｒ２）,--param=category=（Ｒ３）,--param=source=（Ｒ４）,--timeout=2]
 
 ＊OnCharacterGPTAppearanceSync
+：
+
+＊OnCharacterGPTAppearanceSyncFailure
 ：
 
 ＊OnCharacterGPTMenu
@@ -78,6 +84,26 @@
 ：\![send,websocket,ws://127.0.0.1:8766,CONFIG|APIKEY|（Ｒ０）]
 ＊OnClearAPIKey
 ：\![send,websocket,ws://127.0.0.1:8766,CONFIG|CLEARKEY]
+
+＃ Network update feedback.
+＃ Background progress events stay silent; terminal events remain visible long enough to read.
+＊OnUpdateBegin
+：
+
+＊OnUpdateReady
+：
+
+＊OnUpdateComplete
+：\0\s[25]CharacterGPT 網路更新完成。\nSSP 結果：（Ｒ０）\n更新檔案：（Ｒ１）\_w[6000]\e
+
+＊OnUpdateFailure
+：\0\s[3]CharacterGPT 網路更新失敗。\n原因：（Ｒ０）\n未完成檔案：（Ｒ１）\_w[8000]\e
+
+＊OnUpdateCheckComplete
+：\0\s[25]CharacterGPT 更新檢查完成。\nSSP 結果：（Ｒ０）\_w[4500]\e
+
+＊OnUpdateCheckFailure
+：\0\s[3]CharacterGPT 更新檢查失敗。\n原因：（Ｒ０）\_w[6500]\e
+
 ＊OnClose
 ：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|CLOSE]\![close,websocket,ws://127.0.0.1:8766]\0\s[5]再見。\-\e
-\n＊OnUpdateComplete\n：\0\s[25]CharacterGPT 的網路更新完成了。\n重新切換角色後套用必要的文字層更新。\e\n\n＊OnUpdateFailure\n：\0\s[3]CharacterGPT 網路更新失敗。\n請查看 SSP 的網路更新錯誤訊息。\e\n
