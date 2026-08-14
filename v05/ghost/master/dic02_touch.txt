@@ -6,7 +6,9 @@
 ＃ During talking/choosing/visible balloon, Leave returns no script at all.
 ＃ Local reflex timing:
 ＃ - Head/Hair keep Runtime's sustained-touch timing.
-＃ - Bust reacts visually immediately. Single-click semantics are deferred briefly so a double click becomes canonical grab without leaking a preceding light_touch.
+＃ - Bust hover is transient: first MOVE switches to the local surprised reflex and leaving restores normally.
+＃ - Bust click is latched: single/double click keeps the surprised reflex after MouseLeave until the formal Runtime/LLM presentation owns the expression; system balloon close/timeout clears the latch.
+＃ - Bust single-click semantics are deferred briefly so a double click becomes canonical grab without leaking a preceding light_touch.
 ＃ - Runtime v0.5.24 compatibility: Bust double-click is transported as legacy POINTER|double; Bridge v0.5.25 rewrites the outbound LLM semantic event from heavy_tap to grab.
 ＃ - Book single click reacts visually immediately; semantic meaning remains neutral look_at.
 
@@ -21,6 +23,7 @@
 ＞OnCharacterGPTMenu
 
 ＊CharacterGPTSingleClick
+＄CharacterGPTBustClickLatched	0
 ：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊CharacterGPTBustClickCandidate
@@ -30,6 +33,7 @@
 ＄CharacterGPTBustClickX	（Ｒ０）
 ＄CharacterGPTBustClickY	（Ｒ１）
 ＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBustClickLatched	1
 ：\0\s[2]\![timerraise,600,1,CharacterGPTBustSingleCommit]
 
 ＊CharacterGPTBustSingleCommit
@@ -41,6 +45,7 @@
 ：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（CharacterGPTBustClickCharacter）|（CharacterGPTBustClickPart）|（CharacterGPTBustClickX）|（CharacterGPTBustClickY）]
 
 ＊CharacterGPTBookSingleClick
+＄CharacterGPTBustClickLatched	0
 ：\0\s[20]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊OnMouseDoubleClick	（Ｒ５）==0
@@ -53,11 +58,13 @@
 ＞CharacterGPTDoubleClick	（Ｒ３）==1&&（Ｒ４）==Wing
 
 ＊CharacterGPTDoubleClick
+＄CharacterGPTBustClickLatched	0
 ：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊CharacterGPTBustGrab
 ＄CharacterGPTBustClickPending	0
 ＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBustClickLatched	1
 ：\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊OnMouseMove
@@ -81,7 +88,7 @@
 ：\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
 
 ＃ Local leave reflex restoration.
-＃ Restore only when no delayed/dialogue UI owns the current expression.
+＃ Hover restores on leave, but a completed Bust click latches the local reflex until response presentation lifecycle clears it.
 ＊OnMouseLeave
 ＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Head
 ＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Hair
@@ -96,6 +103,10 @@
 
 ＊CharacterGPTLocalLeaveBust
 ＄CharacterGPTBustLocalActive	0
+＞CharacterGPTLocalLeaveBustRestore	（CharacterGPTBustClickLatched）!=1
+：
+
+＊CharacterGPTLocalLeaveBustRestore
 ：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
 
 ＊CharacterGPTLocalLeaveOwl
@@ -103,6 +114,10 @@
 
 ＊OnMouseLeaveAll
 ＄CharacterGPTBustLocalActive	0
+＞CharacterGPTLocalLeaveAllRestore	（CharacterGPTBustClickLatched）!=1
+：
+
+＊CharacterGPTLocalLeaveAllRestore
 ：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\1\s[10]\e）
 
 ＃ Hover itself is not a semantic event and produces no script.
