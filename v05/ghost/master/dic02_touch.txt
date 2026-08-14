@@ -1,4 +1,4 @@
-＃ CharacterGPT v0.5.25 touch/event adapter
+＃ CharacterGPT v0.5.26 touch/event adapter
 ＃ v0.5.7 touch semantics are preserved in the Bridge.
 ＃ Only recognised touch-collision MOVE events are transported.
 ＃ MouseLeave / MouseLeaveAll are LOCAL visual housekeeping only.
@@ -9,8 +9,8 @@
 ＃ - Bust hover is transient: first MOVE switches to the local surprised reflex and leaving restores normally.
 ＃ - Bust click is latched: single/double click keeps the surprised reflex after MouseLeave until formal Runtime/LLM presentation owns the expression.
 ＃ - Bust single-click semantics are deferred briefly so a double click becomes canonical grab without leaking a preceding light_touch.
-＃ - Runtime v0.5.24 compatibility: Bust double-click is transported as legacy POINTER|double; Bridge v0.5.25 rewrites the outbound LLM semantic event from heavy_tap to grab.
-＃ - Every recognised touch restarts the 30-second local idle-reading timer.
+＃ - Runtime v0.5.24 compatibility: Bust double-click is transported as legacy POINTER|double; Bridge v0.5.26 rewrites the outbound LLM semantic event from heavy_tap to grab.
+＃ - Every recognised touch exits idle-reading and restarts the 30-second local idle-reading timer.
 ＃ - Book single click reacts immediately with surface 0 (look toward the book); semantic meaning remains neutral look_at.
 
 ＊OnMouseClick	（Ｒ５）==0
@@ -25,6 +25,8 @@
 
 ＊CharacterGPTSingleClick
 ＄CharacterGPTBustClickLatched	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊CharacterGPTBustClickCandidate
@@ -35,6 +37,8 @@
 ＄CharacterGPTBustClickY	（Ｒ１）
 ＄CharacterGPTBustLocalActive	1
 ＄CharacterGPTBustClickLatched	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[2]\![timerraise,600,1,CharacterGPTBustSingleCommit]
 
 ＊CharacterGPTBustSingleCommit
@@ -47,6 +51,8 @@
 
 ＊CharacterGPTBookSingleClick
 ＄CharacterGPTBustClickLatched	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[0]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊OnMouseDoubleClick	（Ｒ５）==0
@@ -60,12 +66,16 @@
 
 ＊CharacterGPTDoubleClick
 ＄CharacterGPTBustClickLatched	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊CharacterGPTBustGrab
 ＄CharacterGPTBustClickPending	0
 ＄CharacterGPTBustLocalActive	1
 ＄CharacterGPTBustClickLatched	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
 
 ＊OnMouseMove
@@ -78,14 +88,20 @@
 ＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Wing
 
 ＊CharacterGPTTouchMove
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
 
 ＊CharacterGPTBustTouchMove
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ＞CharacterGPTBustTouchMoveFirst	（CharacterGPTBustLocalActive）!=1
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
 
 ＊CharacterGPTBustTouchMoveFirst
 ＄CharacterGPTBustLocalActive	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
 ：\![timerraise,30000,1,OnCharacterGPTIdleReading]\0\s[2]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
 
 ＃ Local leave reflex restoration.
