@@ -1,0 +1,90 @@
+＃ CharacterGPT Prototype v0.5.20 bootstrap/menu
+＃ Satori only carries ASCII control/events. Chat text and LLM output bypass SHIORI.
+＃ Bridge WebSocket: ws://127.0.0.1:8766
+
+＊OnFirstBoot
+：\0\s[20]CharacterGPT v0.5.20：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge_v0520.vbs]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+
+＊OnBoot
+：\0\s[20]CharacterGPT v0.5.20：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge_v0520.vbs]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+
+＊OnGhostChanged
+：\0\s[20]CharacterGPT v0.5.20：正在啟動 Bridge……\n\![open,file,bridge/CharacterGPTBridge_v0520.vbs]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
+
+＊OnCharacterGPTOpen
+：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|BOOT]\0\s[25]CharacterGPT Runtime 已連線。\n左鍵點非觸摸區域可開啟 CharacterGPT 選單。\e
+
+＊OnCharacterGPTReconnect
+：\0\s[25]CharacterGPT Runtime 已重新連線。\e
+
+＊OnCharacterGPTFailure
+：\0\s[3]CharacterGPT Runtime 尚未連線。\n\q[重新啟動 Bridge,OnStartCharacterGPTBridge]\e
+
+＊OnCharacterGPTClose
+：\0\s[3]CharacterGPT Runtime 已中斷。\e
+
+＊OnStartCharacterGPTBridge
+：\![open,file,bridge/CharacterGPTBridge_v0520.vbs]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]
+
+＊OnCharacterGPTMenu
+：\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\0\s[20]\![set,balloontimeout,0]\![set,choicetimeout,0]CharacterGPT\n\n\q[開始對話,OnOpenChat]\n\q[對話持續時間,OnBalloonDurationMenu]\n\q[設定 API Key,OnConfigureAPIKey]\e
+
+＊OnBalloonDurationMenu
+：\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\0\s[20]\![set,balloontimeout,0]\![set,choicetimeout,0]對話持續時間\n這個設定會套用到 CharacterGPT 的對話、觸碰反應與 Runtime 訊息。\n\n\q[10 秒,OnSetBalloon10]\n\q[15 秒（標準）,OnSetBalloon15]\n\q[20 秒,OnSetBalloon20]\n\q[30 秒,OnSetBalloon30]\n\q[60 秒,OnSetBalloon60]\n\q[不自動關閉,OnSetBalloonManual]\n\q[返回,OnCharacterGPTMenu]\e
+
+＊OnSetBalloon10
+：\![send,websocket,ws://127.0.0.1:8766,CONFIG|BALLOON|10]
+
+＊OnSetBalloon15
+：\![send,websocket,ws://127.0.0.1:8766,CONFIG|BALLOON|15]
+
+＊OnSetBalloon20
+：\![send,websocket,ws://127.0.0.1:8766,CONFIG|BALLOON|20]
+
+＊OnSetBalloon30
+：\![send,websocket,ws://127.0.0.1:8766,CONFIG|BALLOON|30]
+
+＊OnSetBalloon60
+：\![send,websocket,ws://127.0.0.1:8766,CONFIG|BALLOON|60]
+
+＊OnSetBalloonManual
+：\![send,websocket,ws://127.0.0.1:8766,CONFIG|BALLOON|0]
+
+＊OnCharacterGPTBalloonTimeout
+：\0\b[-1]\1\b[-1]\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]\e
+
+＃ Surface restoration is tied to the balloon actually disappearing, not to LLM timing.
+＃ CharacterGPT owns balloon lifetime, so only real close/timeout signals start the 15s restore.
+＃ OnBalloonBreak is intentionally not used: interruption by a new script is not a stable close.
+＊OnBalloonClose
+：\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]
+
+＊OnBalloonTimeout
+：\![timerraise,15000,1,OnCharacterGPTSurfaceRestore]
+
+＊OnCharacterGPTSurfaceRestore
+：\0\s[20]\1\s[10]\e
+
+＊OnOpenChat
+：\![send,websocket,ws://127.0.0.1:8766,COMMAND|OPEN_CHAT]
+
+＊OnCharacterGPT
+：
+
+＊OnConfigureAPIKey
+：\![open,passwordinput,OnCharacterGPTAPIKey,--timeout=-1,--limit=300]
+
+＊OnCharacterGPTAPIKey
+：\![send,websocket,ws://127.0.0.1:8766,CONFIG|APIKEY|（Ｒ０）]
+
+＊OnClearAPIKey
+：\![send,websocket,ws://127.0.0.1:8766,CONFIG|CLEARKEY]
+
+＊OnUpdateComplete
+：\0\s[25]CharacterGPT 的網路更新完成了。\n重新切換角色後套用更新。\e
+
+＊OnUpdateFailure
+：\0\s[3]CharacterGPT 網路更新失敗。\n請查看 SSP 的更新錯誤訊息。\e
+
+＊OnClose
+：\![send,websocket,ws://127.0.0.1:8766,SYSTEM|CLOSE]\![close,websocket,ws://127.0.0.1:8766]\0\s[5]再見。\-\e

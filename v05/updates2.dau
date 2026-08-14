@@ -1,7 +1,15 @@
-ghost/master/descript.txt17a9cb12794c319c4e03a6798ea0febdsize=236
+ghost/master/descript.txtb438dca409396c790dba74e4108c5559size=236
+ghost/master/dic00_system.txt299ef8e56ee318b5aa08aa8e92478cd5size=3983
 ghost/master/dic01_chat.txtaa4cefd192244cf27ad5a662e2dce0c6size=279
 ghost/master/dic02_touch.txtf854cf5554d7057c3a473edd2d42b6d6size=3812
 ghost/master/satori_bootconf.txtf755e4251a9d8b06706839ca921627f2size=17
 ghost/master/config/interaction_rules.json20b5ff5976a91ffef380019eaf89f664size=8826
 ghost/master/config/reaction_examples.jsonlbc092f13286167e9a551daadcce57d01size=5571
 ghost/master/config/reaction_style.json4b72ddcec21850cb02cf56399553e6easize=208
+ghost/master/config/README.txteab07647f9114b20abbc808be5dfea14size=3566
+ghost/master/character_defaults/manifest.json38e90e4e22db8e60bc616c53e72f6d4csize=100
+ghost/master/character_defaults/character.md02c66a0a426f921974cdf02033aa593csize=1014
+ghost/master/character_defaults/appearance.mdd8c94279dbca48ab3e3d1395a8a9dca0size=752
+ghost/master/bridge/README.txt0a0d0a1797287ca66d605130ea3b80b1size=2105
+ghost/master/bridge/CharacterGPTBridge_v0520.vbs5a9a370d0a0a5c37b89b0da55462386asize=388
+ghost/master/bridge/CharacterGPTBridge_v0520.ps1bec1f404ab240420084a37116af8e99bsize=12868
