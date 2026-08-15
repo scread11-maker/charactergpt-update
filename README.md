@@ -2,7 +2,8 @@
 
 SSP network-update repository for CharacterGPT Prototype.
 
-Current baseline: **v0.5.23**
+Current text/config baseline: **v0.5.30 - Emotional Persistence Tuning**
+Current binary baseline: **Bridge v0.5.29 / Runtime v0.5.28**
 
 Published through GitHub Pages at:
 `https://scread11-maker.github.io/charactergpt-update/v05/`

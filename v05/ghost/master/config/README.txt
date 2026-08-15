@@ -1,4 +1,4 @@
-CharacterGPT v0.5.29 - Local Interaction + Emotional Context
+CharacterGPT v0.5.30 - Local Interaction + Emotional Context
 
 Files
 - interaction_rules.json: author/default interpretation rules.
@@ -52,7 +52,7 @@ Runtime memory vs emotional context
 - Bridge CURRENT EMOTIONAL CONTEXT answers what short-term affect remains from prior LLM reactions.
 - Emotional context is stored at ghost/master/profile/emotional_state.json and is never part of Character or autobiographical Memory.
 - It decays toward neutral over time instead of resetting after each balloon.
-- Physical-event reactions contribute at full configured weight; ordinary dialogue contributes more weakly by default.
+- Physical-event reactions contribute at full configured weight; ordinary dialogue contributes at a lower configured weight.
 - The state is derived from the LLM's structured emotion output, so a touch is not hard-coded to mean affection, anger, embarrassment, etc.
 - The state should influence tone, expectation, tolerance and interpretation, but should not be recited as labels, scores, counters or timestamps.
 - A new event may strengthen, soften, redirect or resolve the prior state.
@@ -80,3 +80,10 @@ v0.5.29 local emotional context
 - User-facing primary labels derived from those channels: neutral, pleased, cheerful, shy, wary, annoyed, upset, downcast.
 - Default half-life: 240 seconds.
 - This layer complements Runtime event/count memory; it does not replace or duplicate those counters.
+
+v0.5.30 emotional persistence tuning
+- dialogue_weight: 0.65 (was 0.35).
+- neutral_threshold: 0.05 (was 0.08).
+- half_life_seconds: 300 (was 240).
+- physical_weight remains 1.0.
+- Goal: make ordinary-dialogue affect carry over perceptibly into following turns while preserving decay and allowing new events to redirect or resolve it.
