@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://charactergpt.local/contracts/presentation_command.schema.json",
+  "title": "CharacterGPT Presentation Command",
+  "type": "object",
+  "required": ["schema_version", "expression", "intensity"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "0.6-alpha1"},
+    "response_id": {"type": ["string", "null"], "description": "Optional correlation id for the assistant turn. It is not user-visible text."},
+    "expression": {
+      "type": "string",
+      "enum": ["neutral", "smile", "cheerful", "embarrassed", "embarrassed_smile", "surprised", "concerned", "angry", "embarrassed_angry", "sad"]
+    },
+    "intensity": {"type": "number", "minimum": 0, "maximum": 1},
+    "gesture": {"type": ["string", "null"], "description": "Optional implementation-defined SSP/character gesture identifier."},
+    "duration_ms": {"type": ["integer", "null"], "minimum": 0, "maximum": 120000},
+    "update_emotional_state": {"type": "boolean", "default": true, "description": "Whether this presentation result may feed the existing CharacterGPT short-term emotional-state engine."}
+  },
+  "additionalProperties": false,
+  "$comment": "This command intentionally contains no dialogue/text field. Natural-language assistant output belongs to the conversation channel, not the machine-control channel."
+}
