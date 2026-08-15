@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://charactergpt.local/contracts/character_context.schema.json",
+  "title": "CharacterGPT Character Context",
+  "type": "object",
+  "required": ["schema_version", "captured_at", "emotion", "appearance", "recent_events", "persistent_counts", "presentation"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "0.6-alpha1"},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "emotion": {
+      "type": "object",
+      "required": ["primary", "channels"],
+      "properties": {
+        "primary": {"type": "string", "enum": ["neutral", "pleased", "cheerful", "shy", "wary", "annoyed", "upset", "downcast"]},
+        "channels": {
+          "type": "object",
+          "required": ["positive", "shy", "wary", "annoyed", "downcast"],
+          "properties": {
+            "positive": {"type": "number", "minimum": 0, "maximum": 1},
+            "shy": {"type": "number", "minimum": 0, "maximum": 1},
+            "wary": {"type": "number", "minimum": 0, "maximum": 1},
+            "annoyed": {"type": "number", "minimum": 0, "maximum": 1},
+            "downcast": {"type": "number", "minimum": 0, "maximum": 1}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "appearance": {
+      "type": "object",
+      "description": "Authoritative SSP/dress-up state. Keys are implementation-defined but values must be structured facts, not autobiographical memory.",
+      "additionalProperties": true
+    },
+    "recent_events": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["kind", "summary"],
+        "properties": {
+          "kind": {"type": "string"},
+          "target": {"type": ["string", "null"]},
+          "summary": {"type": "string", "maxLength": 300},
+          "age_seconds": {"type": ["number", "null"], "minimum": 0}
+        },
+        "additionalProperties": true
+      }
+    },
+    "persistent_counts": {
+      "type": "object",
+      "additionalProperties": {"type": ["integer", "number", "string", "boolean", "null"]}
+    },
+    "presentation": {
+      "type": "object",
+      "properties": {
+        "expression": {"type": ["string", "null"]},
+        "surface": {"type": ["integer", "null"]},
+        "idle": {"type": "boolean"},
+        "balloon_visible": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    },
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "can_set_expression": {"type": "boolean"},
+        "can_set_gesture": {"type": "boolean"},
+        "can_mirror_response": {"type": "boolean"},
+        "can_receive_external_events": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
