@@ -292,6 +292,17 @@
       ]
     },
     {
+      "id": "wry_smile_expression",
+      "target": "*",
+      "gesture": "*",
+      "meaning": [
+        "wry_smile = restrained smile; context may make it teasing, bitter, resigned, awkward, or dryly amused"
+      ],
+      "notes": [
+        "Do not assume mockery or superiority. embarrassed_wry_smile is the same visual expression with supported blush/embarrassment."
+      ]
+    },
+    {
       "id": "separate_repeated_interaction_occurrences",
       "target": "*",
       "gesture": "*",
