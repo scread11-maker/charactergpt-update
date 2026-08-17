@@ -1,6 +1,6 @@
 charset,UTF-8
 type,ghost
-name,CharacterGPT Prototype v0.6.0-alpha5-r6-test31aa
+name,CharacterGPT Prototype v0.6.0-alpha5-r6-test31i Identity + Resting + Strong Priority
 sakura.name,CharacterGPT
 kero.name,Owl
 craftman,prototype
