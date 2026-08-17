@@ -1,0 +1,143 @@
+name: Cleanup dic02 comments
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-dic02-comments.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clean historical comment labels and sync manifest
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          p = Path('v061/ghost/master/dic02_touch.txt')
+          raw = p.read_bytes()
+          text = raw.decode('utf-8-sig')
+          original = text.splitlines()
+
+          replacements = {
+          '''＃ CharacterGPT alpha5-r6-test31l touch/contact-state adapter
+          ＃ test31l preserves unified impulse priority and adds only a generic click-memory arbiter.
+          ＃ Runtime POINTER timing is unchanged: a provisional single still reaches Runtime immediately.
+          ＃ Only touch-memory commit waits 600ms so a completed double click cancels the provisional light_touch memory instead of accumulating light+heavy.
+          ＃ Balloon-transparent contact state machine: MOVING -> STATIONARY -> RESTING -> MOVING.
+          ＃ MouseLeave remains Runtime-websocket silent; r6-test13 sends only a local contact-lifecycle release notification to the Touch Contact helper; release is state metadata, not a gesture category.
+          ＃ Visible-balloon MOVE uses SATORI script-head \\C so hover does not replace the current balloon.
+          ＃ v0.5.7 touch semantics are preserved in the Bridge.
+          ＃ Only recognised touch-collision MOVE events are transported.
+          ＃ MouseLeave / MouseLeaveAll never go to the legacy Runtime/WS; active contacts may close through the local Touch Contact helper.
+          ＃ They never go to Bridge/LLM and never participate in gesture intensity.
+          ＃ During talking/choosing/visible balloon, Leave returns no script at all.
+          ＃ Local reflex timing:
+          ＃ - Head/Hair keep Runtime's sustained-touch timing.
+          ＃ - Bust hover is transient: first MOVE uses surface 2 (surprised, no hoppe) and leaving restores normally.
+          ＃ - Bust click is latched with surface 22 (surprised + hoppe, base1) until formal Runtime/LLM presentation owns the expression.
+          ＃ - Bust single-click semantics are deferred briefly so a double click becomes canonical grab without leaking a preceding light_touch.
+          ＃ - Runtime v0.5.24 compatibility: Bust double-click is transported as legacy POINTER|double; Bridge v0.5.26 rewrites the outbound LLM semantic event from heavy_tap to grab.
+          ＃ - Every recognised touch exits idle-reading and restarts the 3-minute local idle-reading timer.
+          ＃ - Book single click uses surface 0/base1 and is locally latched for at least 1000ms so MouseLeave cannot erase it immediately.
+          ＃ - Book MOVE/stroking also reacts locally on first movement with surface 0/base1 while keeping Runtime semantics unchanged.''':
+          '''＃ Touch/contact adapter contracts.
+          ＃ POINTER single events reach Runtime immediately; only touch-memory commit waits 600ms so a completed double click can cancel provisional light_touch memory.
+          ＃ Contact phases: MOVING -> STATIONARY -> RESTING -> MOVING.
+          ＃ Recognised collision MOVE events are transported; visible-balloon MOVE uses SATORI script-head \\C so hover does not replace the current balloon.
+          ＃ MouseLeave / MouseLeaveAll do not go to Runtime, Bridge/LLM, or gesture intensity; active contacts may close only through the local contact helper.
+          ＃ During talking/choosing/visible balloon, Leave returns no script.
+          ＃ Local reflexes:
+          ＃ - Head/Hair keep Runtime sustained-touch timing.
+          ＃ - Bust hover is transient: first MOVE uses surface 2 and leaving restores normally.
+          ＃ - Bust click is latched with surface 22 until formal Runtime/LLM presentation owns the expression.
+          ＃ - Bust single-click memory is deferred so a completed double click becomes canonical grab without leaking light_touch.
+          ＃ - Bust double-click keeps POINTER|double transport; Bridge canonicalizes it to grab.
+          ＃ - Every recognised touch exits idle-reading and restarts the 3-minute idle timer.
+          ＃ - Book single click uses surface 0/base1 and is locally latched for at least 1000ms so MouseLeave cannot erase it immediately.
+          ＃ - Book MOVE/stroking reacts locally on first movement with surface 0/base1 while preserving Runtime semantics.''',
+          '＃ r6-test31e: target-change self-heal. If SATORI still believes an older target is active but a recognised MOVE arrives on a different target/character, close the stale helper lifecycle without LLM presentation and begin the newly observed contact locally.':
+          '＃ Target-change self-heal: if SATORI still tracks an older target but a recognised MOVE arrives on another target/character, close the stale helper lifecycle without LLM presentation and begin the newly observed contact.',
+          '＃ r6-test7 contact-state start/resume helpers.':
+          '＃ Contact-state start/resume helpers.',
+          '''＃ alpha5-r6-test4: non-blocking re-entry boundary plus balloon-transparent MOVE.
+          ＃ \\C must be at the true SakuraScript head in SSP. In SATORI this requires ＄スクリプトの一番頭.
+          ＃ Preserve branches do not change the current balloon timeout; they only prevent MOVE from replacing its contents.''':
+          '''＃ Re-entry boundary is non-blocking and preserves visible balloons.
+          ＃ \\C must be at the true SakuraScript head; in SATORI this requires ＄スクリプトの一番頭. Preserve branches do not change the current balloon timeout.''',
+          '''＃ Local leave reflex restoration.
+          ＃ Hover restores on leave, but a completed Bust click latches the local reflex until response presentation lifecycle clears it.''':
+          '＃ Leave reflex: hover restores on leave, but a completed Bust click remains latched until response presentation clears it.',
+          '''＃ r6-test8: OnMouseHover is positive evidence that the cursor is still inside a collision.
+          ＃ Absence of MOVE alone is never treated as continued physical contact.''':
+          '＃ OnMouseHover is positive evidence that the cursor is still inside a collision; absence of MOVE alone is not continued physical contact.',
+          '＃ r6-test31e: local established-contact gate. It does not decide gestures; it only prevents a sub-250ms lifecycle-only exit from consuming a Bridge release request. TouchProgress still receives and records the release.':
+          '＃ Established-contact gate only prevents a sub-250ms lifecycle-only exit from consuming a Bridge release request; TouchProgress still receives and records the release.',
+          '''＃ r6-test11 stationary/resting state machine.
+          ＃ OnMouseHover remains positive evidence for an early stationary transition.
+          ＃ Fallback: every recognized MOVE restarts this 900ms local timer. If it fires while
+          ＃ the same contact is still active and MouseLeave has not cleared it, the cursor
+          ＃ is treated as stationary. MouseLeave cancels this path and, in r6-test12, closes the helper session
+          ＃ by clearing CharacterGPTTemporalTouchActive. The helper backdates stationary by
+          ＃ 900ms, so a 2100ms resting timer commits at approximately 3.0s after the last MOVE.''':
+          '''＃ Stationary/resting state machine.
+          ＃ OnMouseHover is positive evidence for an early stationary transition.
+          ＃ Every recognised MOVE restarts the 900ms stationary timer; if it fires while the same contact remains active, the cursor becomes stationary.
+          ＃ MouseLeave cancels this path and clears the active helper session. The helper backdates stationary by 900ms, so the 2100ms resting timer commits at about 3.0s after the last MOVE.''',
+          '''＃ r6-test6 long-stroke progress checkpoints.
+          ＃ MouseLeave only clears CharacterGPTTemporalTouchActive; no HTTP/websocket is emitted there.
+          ＃ The same timer event name is restarted on each boundary start, preventing stale-session timers.''':
+          '''＃ Long-stroke progress checkpoints.
+          ＃ MouseLeave only clears CharacterGPTTemporalTouchActive; it emits no HTTP/websocket here.
+          ＃ Each boundary start restarts the same timer event, preventing stale-session timers.''',
+          }
+
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'Expected comment block not found:\n{old[:120]}')
+              text = text.replace(old, new, 1)
+
+          cleaned = text.splitlines()
+          original_non = [line for line in original if not line.startswith('＃')]
+          cleaned_non = [line for line in cleaned if not line.startswith('＃')]
+          if original_non != cleaned_non:
+              raise SystemExit('Non-comment lines changed; refusing to commit')
+
+          out = b'\xef\xbb\xbf' + ('\n'.join(cleaned) + '\n').encode('utf-8')
+          p.write_bytes(out)
+
+          md5 = hashlib.md5(out).hexdigest()
+          size = len(out)
+          manifest = Path('v061/updates2.dau')
+          lines = manifest.read_text(encoding='utf-8').splitlines()
+          prefix = 'ghost/master/dic02_touch.txt\x01'
+          found = False
+          for i, line in enumerate(lines):
+              if line.startswith(prefix):
+                  lines[i] = f'ghost/master/dic02_touch.txt\x01{md5}\x01size={size}\x01'
+                  found = True
+                  break
+          if not found:
+              raise SystemExit('dic02_touch manifest entry not found')
+          manifest.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+          print(f'dic02_touch.txt md5={md5} size={size}')
+          print(f'comment lines: {sum(x.startswith("＃") for x in original)} -> {sum(x.startswith("＃") for x in cleaned)}')
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add v061/ghost/master/dic02_touch.txt v061/updates2.dau
+          git diff --cached --check
+          git commit -m 'Clean dic02 touch contract comments'
+          git push
