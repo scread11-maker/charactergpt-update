@@ -1,0 +1,75 @@
+name: Add wry smile guidance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/add-wry-smile-guidance.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add compact wry-smile interaction guidance
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, hashlib
+
+          p = Path('v061/ghost/master/config/interaction_rules.json')
+          obj = json.loads(p.read_text(encoding='utf-8'))
+          rules = obj['rules']
+          if any(r.get('id') == 'wry_smile_expression' for r in rules):
+              raise SystemExit('wry_smile_expression already exists')
+
+          rule = {
+              'id': 'wry_smile_expression',
+              'target': '*',
+              'gesture': '*',
+              'meaning': [
+                  'wry_smile = restrained smile; context may make it teasing, bitter, resigned, awkward, or dryly amused'
+              ],
+              'notes': [
+                  'Do not assume mockery or superiority. embarrassed_wry_smile is the same visual expression with supported blush/embarrassment.'
+              ]
+          }
+
+          # Keep general expression semantics near other cross-interaction rules.
+          idx = next((i for i, r in enumerate(rules) if r.get('id') == 'separate_repeated_interaction_occurrences'), len(rules))
+          rules.insert(idx, rule)
+          text = json.dumps(obj, ensure_ascii=False, indent=2) + '\n'
+          p.write_text(text, encoding='utf-8', newline='\n')
+
+          # Validate only one compact guidance rule and no legacy smirk guidance.
+          out = json.loads(p.read_text(encoding='utf-8'))
+          rr = [r for r in out['rules'] if r.get('id') == 'wry_smile_expression']
+          assert len(rr) == 1
+          assert 'wry_smile' in rr[0]['meaning'][0]
+
+          data = p.read_bytes()
+          md5 = hashlib.md5(data).hexdigest()
+          size = len(data)
+          manifest = Path('v061/updates2.dau')
+          lines = manifest.read_text(encoding='utf-8').splitlines()
+          prefix = 'ghost/master/config/interaction_rules.json\x01'
+          for i, line in enumerate(lines):
+              if line.startswith(prefix):
+                  lines[i] = f'ghost/master/config/interaction_rules.json\x01{md5}\x01size={size}\x01'
+                  break
+          else:
+              raise SystemExit('interaction_rules manifest entry missing')
+          manifest.write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
+          print(f'interaction_rules md5={md5} size={size}')
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add v061/ghost/master/config/interaction_rules.json v061/updates2.dau
+          git diff --cached --check
+          git commit -m 'Define wry smile expression semantics'
+          git push
