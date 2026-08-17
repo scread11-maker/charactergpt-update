@@ -1,2 +1,0 @@
-＊初期化
-＄CharacterGPTBalloonTimeoutMs	15000
