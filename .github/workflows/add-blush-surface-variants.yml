@@ -75,29 +75,23 @@ jobs:
               if re.search(rf'(?m)^surface{new_num}\n\{{', surfaces):
                   raise SystemExit(f'surface{new_num} already exists')
 
-          # Insert 0-series blush variants after surface30.
           anchor = get_block(30)
           addition = '\n\n' + '\n\n'.join(blush_block(n, variants[n]) for n in range(31, 39))
           surfaces = surfaces.replace(anchor, anchor + addition, 1)
 
-          # Insert surface112 between 111 and 113.
           anchor = get_block(111)
           surfaces = surfaces.replace(anchor, anchor + '\n\n' + blush_block(112, 102), 1)
 
-          # Insert blush variants for the 120-series after 122.
           anchor = get_block(122)
           addition = '\n\n' + '\n\n'.join(blush_block(n, variants[n]) for n in (123, 124, 125))
           surfaces = surfaces.replace(anchor, anchor + addition, 1)
 
-          # Insert the pose-matched 100-series variants after surface130.
           anchor = get_block(130)
           addition = '\n\n' + '\n\n'.join(blush_block(n, variants[n]) for n in range(131, 139))
           surfaces = surfaces.replace(anchor, anchor + addition, 1)
 
-          # Keep the allocation note current.
           surfaces = surfaces.replace('//0～9、20～30、100～・・\\0の表情', '//0～9、20～38、100～138・・\\0の表情', 1)
 
-          # Blinking: only expressions whose source already uses normal/kotti blink animation.
           surfaces = surfaces.replace(
               'surface.append1,9,101,109 //通常+照れ',
               'surface.append1,9,31,33,35,101,109,123,131,133,135 //通常+照れ',
@@ -109,7 +103,6 @@ jobs:
               1,
           )
 
-          # Mouth animation: blush variants inherit the source expression's talk group.
           surfaces = surfaces.replace(
               'surface.append0,1,3,6,8,20,21,23,28,100,101,103,106,108,110,111,113,118,120,121,122',
               'surface.append0,1,3,6,8,20,21,23,28,31,34,35,36,38,100,101,103,106,108,110,111,113,118,120,121,122,123,124,125,131,134,135,136,138',
@@ -131,7 +124,6 @@ jobs:
               1,
           )
 
-          # Keep Satori-list surface range aligned with the expanded expression set.
           surfaces = surfaces.replace(
               'surface.append0-9,20-29,100-119',
               'surface.append0-9,20-38,100-138',
@@ -143,6 +135,8 @@ jobs:
           surfaces_path.write_text(surfaces, encoding='utf-8', newline='\n')
 
           table = table_path.read_text(encoding='utf-8')
+          # Remove legacy tab-only blank lines so validation is not polluted by old trailing whitespace.
+          table = re.sub(r'(?m)^\t+$', '', table)
           table = table.replace('\t22,驚き+ほっぺ', '\t22,照れ驚き', 1)
           table = table.replace('\t30,照れ笑い-こっち見', '\t30,照れ微笑み-こっち見', 1)
           table = table.replace(
@@ -183,7 +177,6 @@ jobs:
           )
           table_path.write_text(table, encoding='utf-8', newline='\n')
 
-          # Validate every new surface is exactly its source plus hoppe.
           final = surfaces_path.read_text(encoding='utf-8')
           def final_block(num):
               m = re.search(rf'(?m)^surface{num}\n\{{\n.*?\n\}}', final, re.S)
@@ -193,13 +186,10 @@ jobs:
           for new_num, source_num in variants.items():
               new = final_block(new_num).replace(f'surface{new_num}\n', '', 1)
               src = final_block(source_num).replace(f'surface{source_num}\n', '', 1)
-              src = src.replace('\n}', '\nelement1,overlayfast,hoppe.png,0,0\n}', 1) if False else src
-              # Normalize by removing only the added hoppe line from the new block.
               new_without_hoppe = new.replace('element1,overlayfast,hoppe.png,0,0\n', '', 1)
               if new_without_hoppe != src:
                   raise SystemExit(f'surface{new_num} does not match source{source_num} + hoppe')
 
-          # Validate label normalization.
           required_labels = [
               '22,照れ驚き', '30,照れ微笑み-こっち見', '35,照れ冷笑',
               '112,照れ驚き-顎に手', '123,照れ悩む',
@@ -210,7 +200,6 @@ jobs:
               if label not in final_table:
                   raise SystemExit(f'missing surfacetable label: {label}')
 
-          # Sync update manifest with exact bytes.
           manifest = manifest_path.read_text(encoding='utf-8').splitlines()
           updates = {
               'shell/master/surfaces.txt': surfaces_path.read_bytes(),
