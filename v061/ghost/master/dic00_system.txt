@@ -1,14 +1,4 @@
-﻿＃ sspgpt Prototype v0.6.0-alpha4 system hotfix
-＃ Direct native executable startup; profile refresh is a one-shot script, not a resident launcher.
-＃ Runtime WebSocket: ws://127.0.0.1:8766
-＃ Character/appearance proxy: http://127.0.0.1:8767/
-＃ System presentation hotfix: normal system balloons follow sspgpt dialogue duration.
-＃ Local appearance HTTP sync is synchronous and callback-free so it cannot interrupt a visible balloon.
-＃ Bust click local-reflex latch is released by response balloon/presentation lifecycle end.
-＃ Local idle-reading state v2: 3 minutes after the last real interaction -> main surface 0/base1.
-＃ Bridge v0.5.26 raises OnCharacterGPTActivity for native-chat/LLM turns so chat activity also resets the local idle timer.
-
-＊OnFirstBoot
+﻿＊OnFirstBoot
 ＄CharacterGPTChatGPTLinkEnabled	0
 ＄CharacterGPTRecentReactionGuard	0
 ：\0\s[20]sspgpt v0.6.0-alpha5：正在啟動本地服務……\n\![open,file,bridge/CharacterGPTBridge.exe]\![open,file,bridge/CharacterGPTTouchProgress.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]\e
@@ -133,7 +123,6 @@
 ＊OnCharacterGPTSurfaceRestoreDo
 ：\0\s[20]\1\s[10]\e
 
-＃ Bridge v0.5.26 calls this via a no-balloon local SSTP raise for native chat / LLM turns.
 ＃ Touch paths reset the same timer directly in dic02_touch.txt.
 ＊OnCharacterGPTActivity
 ＄CharacterGPTBookClickLatched	0
@@ -185,8 +174,6 @@
 ＊OnClearAPIKey
 ：\![send,websocket,ws://127.0.0.1:8766,CONFIG|CLEARKEY]
 
-＃ Network update feedback.
-＃ Normal success messages follow sspgpt dialogue duration; failures stay open.
 
 ＊OnUpdateBegin
 ：\0\s[100]正在確認更新……
@@ -213,7 +200,6 @@
 ：\![timerraise,0,1,OnCharacterGPTIdleReading]\![execute,http-post,http://127.0.0.1:8769/shutdown,--nodescript,--nofile=UTF-8,--timeout=1]\![send,websocket,ws://127.0.0.1:8766,SYSTEM|CLOSE]\![close,websocket,ws://127.0.0.1:8766]\![open,file,bridge/CharacterGPTPromptAudit.vbs]\0\s[5]再見。\-\e
 
 
-＃ r6-test7: Bridge-mediated long-stroke / resting-touch reaction.
 ＃ This event is raised by the local Touch Progress Service after Bridge decides
 ＃ that the SAME ongoing Runtime-owned touch deserves another visible reaction.
 ＊OnCharacterGPTTouchProgressReaction
@@ -223,7 +209,6 @@
 ：\![timerraise,2000,1,OnCharacterGPTRecentReactionGuardEnd]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\![set,balloontimeout,5000]（Ｒ０）\e
 
 
-＃ v0.6 alpha4 linked-conversation embodiment lifecycle.
 ＃ Reference0 is an SSP surface id. Reference1 is a local cue or milestone.
 ＊OnCharacterGPTLinkedPresence
 ＄CharacterGPTLinkedBusy	1
