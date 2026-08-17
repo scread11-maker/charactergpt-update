@@ -7,7 +7,7 @@ version,1
 //########################################################################################
 //サーフェス番号の割り当て（未改造時）
 //
-//0～9、20～30、100～・・\0の表情
+//0～9、20～38、100～138・・\0の表情
 //10～12 ・・・・・・・・\1の表情
 //
 //8000、8001・・・\0の目ぱち
@@ -185,6 +185,78 @@ element3,overlay,eye/kotti.png,0,0
 element4,overlay,blow/relax.png,0,0
 }
 
+surface31
+{
+element0,overlay,base1.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/normal.png,0,0
+element3,overlay,eye/normal.png,0,0
+element4,overlay,blow/syobon.png,0,0
+}
+
+surface32
+{
+element0,overlay,base1.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/mu.png,0,0
+element3,overlay,eye/toji.png,0,0
+element4,overlay,blow/syobon.png,0,0
+}
+
+surface33
+{
+element0,overlay,base1.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/niko.png,0,0
+element3,overlay,eye/normal.png,0,0
+element4,overlay,blow/relax.png,0,0
+}
+
+surface34
+{
+element0,overlay,base1.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/normal.png,0,0
+element3,overlay,eye/toji.png,0,0
+element4,overlay,blow/normal.png,0,0
+}
+
+surface35
+{
+element0,overlay,base1.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/niko.png,0,0
+element3,overlay,eye/normal.png,0,0
+element4,overlay,blow/syobon.png,0,0
+}
+
+surface36
+{
+element0,overlay,base1.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/normal.png,0,0
+element3,overlay,eye/kotti.png,0,0
+element4,overlay,blow/syobon.png,0,0
+}
+
+surface37
+{
+element0,overlay,base1.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/niko.png,0,0
+element3,overlay,eye/niko.png,0,0
+element4,overlay,blow/relax.png,0,0
+}
+
+surface38
+{
+element0,overlay,base1.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/niko.png,0,0
+element3,overlay,eye/kotti.png,0,0
+element4,overlay,blow/syobon.png,0,0
+}
+
 surface100
 {
 element0,overlay,base2.png,0,0
@@ -284,6 +356,15 @@ element3,overlay,eye/kotti.png,0,0
 element4,overlay,blow/syobon.png,0,0
 }
 
+surface112
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/i.png,0,0
+element3,overlay,eye/ten.png,0,0
+element4,overlay,blow/relax.png,0,0
+}
+
 surface113
 {
 element0,overlay,base2.png,0,0
@@ -357,6 +438,33 @@ element3,overlay,eye/toji.png,0,0
 element4,overlay,blow/hisome.png,0,0
 }
 
+surface123
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/normal.png,0,0
+element3,overlay,eye/normal.png,0,0
+element4,overlay,blow/hisome.png,0,0
+}
+
+surface124
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/normal.png,0,0
+element3,overlay,eye/kotti.png,0,0
+element4,overlay,blow/hisome.png,0,0
+}
+
+surface125
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/mu.png,0,0
+element3,overlay,eye/toji.png,0,0
+element4,overlay,blow/hisome.png,0,0
+}
+
 surface130
 {
 element0,overlay,base2.png,0,0
@@ -364,6 +472,78 @@ element1,overlayfast,hoppe.png,0,0
 element2,overlay,mouth/niko.png,0,0
 element3,overlay,eye/kotti.png,0,0
 element4,overlay,blow/relax.png,0,0
+}
+
+surface131
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/normal.png,0,0
+element3,overlay,eye/normal.png,0,0
+element4,overlay,blow/syobon.png,0,0
+}
+
+surface132
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/mu.png,0,0
+element3,overlay,eye/toji.png,0,0
+element4,overlay,blow/syobon.png,0,0
+}
+
+surface133
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/niko.png,0,0
+element3,overlay,eye/normal.png,0,0
+element4,overlay,blow/relax.png,0,0
+}
+
+surface134
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/normal.png,0,0
+element3,overlay,eye/toji.png,0,0
+element4,overlay,blow/normal.png,0,0
+}
+
+surface135
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/niko.png,0,0
+element3,overlay,eye/normal.png,0,0
+element4,overlay,blow/syobon.png,0,0
+}
+
+surface136
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/normal.png,0,0
+element3,overlay,eye/kotti.png,0,0
+element4,overlay,blow/syobon.png,0,0
+}
+
+surface137
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/niko.png,0,0
+element3,overlay,eye/niko.png,0,0
+element4,overlay,blow/relax.png,0,0
+}
+
+surface138
+{
+element0,overlay,base2.png,0,0
+element1,overlayfast,hoppe.png,0,0
+element2,overlay,mouth/niko.png,0,0
+element3,overlay,eye/kotti.png,0,0
+element4,overlay,blow/syobon.png,0,0
 }
 
 
@@ -405,7 +585,7 @@ animation0.pattern2,overlay,8000,50,0,0
 animation0.pattern3,overlay,-1,50,0,0
 }
 
-surface.append1,9,101,109 //通常+照れ
+surface.append1,9,31,33,35,101,109,123,131,133,135 //通常+照れ
 {
 animation0.interval,sometimes
 animation0.pattern0,overlay,8100,50,0,0
@@ -423,7 +603,7 @@ animation0.pattern2,overlay,8002,50,0,0
 animation0.pattern3,overlay,-1,50,0,0
 }
 
-surface.append21,29,111,119 //こっち見+照れ
+surface.append21,29,36,38,111,119,124,136,138 //こっち見+照れ
 {
 animation0.interval,sometimes
 animation0.pattern0,overlay,8102,50,0,0
@@ -432,7 +612,7 @@ animation0.pattern2,overlay,8102,50,0,0
 animation0.pattern3,overlay,-1,50,0,0
 }
 
-surface.append2,102 //ジト目
+surface.append2,22,102,112 //ジト目
 {
 animation0.interval,sometimes
 animation0.pattern0,overlay,8003,50,0,0
@@ -445,7 +625,7 @@ animation0.pattern3,overlay,-1,50,0,0
 //########################################################################################
 //口パク
 
-surface.append0,1,3,6,8,20,21,23,28,100,101,103,106,108,110,111,113,118,120,121,122
+surface.append0,1,3,6,8,20,21,23,28,31,34,35,36,38,100,101,103,106,108,110,111,113,118,120,121,122,123,124,125,131,134,135,136,138
 {
 animation100.interval,talk
 animation100.pattern0,overlay,8200,140,0,0
@@ -465,7 +645,7 @@ animation100.pattern3,overlay,8202,140,0,0
 animation100.pattern4,overlay,-1,130,0,0
 }
 
-surface.append4,104
+surface.append4,32,104,132
 {
 animation100.interval,talk
 animation100.pattern0,overlay,8205,140,0,0
@@ -475,7 +655,7 @@ animation100.pattern3,overlay,8205,140,0,0
 animation100.pattern4,overlay,-1,130,0,0
 }
 
-surface.append5,25,26,105,115,116
+surface.append5,25,26,33,37,105,115,116,133,137
 {
 animation100.interval,talk
 animation100.pattern0,overlay,8207,140,0,0
@@ -606,7 +786,7 @@ element1,overlay,mouth/niko3.png,0,0
 
 //さとりすと用
 
-surface.append0-9,20-29,100-119
+surface.append0-9,20-38,100-138
 {
 //satolist.palette.offset,80,50
 }
