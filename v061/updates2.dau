@@ -1,0 +1,17 @@
+ghost/master/descript.txt5530410d8519660810a42337f3a4fca0size=276
+ghost/master/dic00_system.txtb10255f33ac7b9c21ed2810c21c73bbdsize=14949
+ghost/master/dic01_chat.txtc23e3010e6c376b124dd97ff5ea60252size=348
+ghost/master/dic02_touch.txtf8acea44bb14bc2633a09b2107b3c74dsize=68264
+ghost/master/satori_bootconf.txt910136c268319686dd88180795009f14size=18
+ghost/master/satori_conf.txtcb36ec547a2c2044ed556570c5be9362size=53
+ghost/master/config/README.txt66318638d44f1bd96b9455c710fc7d15size=7318
+ghost/master/config/context_audit_policy.json36dbbc887a9acad0109f5198b173b830size=1204
+ghost/master/config/emotional_state_rules.jsondb2a8ab14ee0e05f6101262ed45c2d67size=561
+ghost/master/config/touch_memory_rules.json5baff77075c0dc9dff3aff61e0d2d8casize=303
+ghost/master/config/interaction_rules.json3f94d420a986b9d417ab658349e03537size=14293
+ghost/master/config/reaction_examples.jsonl5d00532abaa92ad08049f32840b98e47size=6074
+ghost/master/config/reaction_style.jsonabf63b338234107ff5e37e7d8c06e3b5size=208
+ghost/master/config/runtime_context_rules.json33c73745e08071352a2cd94c683e7bdesize=1242
+shell/master/surfaces.txtb22821225816d1e4aad0e754f0a34504size=15181
+shell/master/surfacetable.txtc75c2926b0fd14036709dd5ee239c6cesize=1728
+readme.txt92a84b8223b982ac39c0427899226be6size=861
