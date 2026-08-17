@@ -69,7 +69,7 @@
 ＄CharacterGPTBustClickLatched	0
 ＄CharacterGPTIdleReadingActive	0
 ＄CharacterGPTIdleReadingPending	0
-：\![timerraise,180000,1,OnCharacterGPTIdleReading]\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\0\s[20]\![set,balloontimeout,0]\![set,choicetimeout,0]（CharacterGPTMenuPrompt）\n\n\q[開始對話,OnOpenChat]\nChatGPT連線　\q[開,OnEnableChatGPTConnection]　\q[關,OnDisableChatGPTConnection]\n\q[對話持續時間,OnBalloonDurationMenu]\n\q[設定 API Key,OnConfigureAPIKey]\n\q[關閉,OnCharacterGPTMenuClose]\e
+：\![timerraise,180000,1,OnCharacterGPTIdleReading]\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\0\s[20]\![set,balloontimeout,0]\![set,choicetimeout,0]（CharacterGPTMenuPrompt）\n\n\q[開始對話,OnOpenChat]\nChatGPT連線　\q[開,OnEnableChatGPTConnection]　\q[關,OnDisableChatGPTConnection]\n\q[對話持續時間,OnBalloonDurationMenu]\n\q[設定 API Key,OnConfigureAPIKey]\n\n\n\q[關閉,OnCharacterGPTMenuClose]\e
 
 ＊OnCharacterGPTMenuClose
 ＄CharacterGPTBustClickLatched	0
