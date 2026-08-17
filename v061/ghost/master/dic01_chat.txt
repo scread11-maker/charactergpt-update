@@ -1,7 +1,7 @@
-＃ CharacterGPT v0.5.23
+＃ sspgpt v0.5.23
 ＃ Chat is handled by the Bridge's native Unicode window.
 ＃ Satori intentionally does not transport user chat text.
 
 ＊OnCommunicate
 ＞OnCharacterGPTLinkedBusyNotice	（CharacterGPTLinkedBusy）==1
-：\0\s[3]v0.5 的中文對話已改由 CharacterGPT Runtime 處理。\n請左鍵點非觸摸區域開啟對話窗。\e
+：\0\s[3]v0.5 的中文對話已改由 sspgpt Runtime 處理。\n請左鍵點非觸摸區域開啟對話窗。\e
