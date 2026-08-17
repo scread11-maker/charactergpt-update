@@ -33,6 +33,17 @@
 ＄CharacterGPTBustClickLatched	0
 ：\0\s[3]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]sspgpt Runtime 已中斷。\e
 
+＠CharacterGPTChatPendingPrompt
+嗯……
+等我一下。
+我想一下……
+
+＊OnCharacterGPTChatPending
+：\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\0\s[122]\![set,balloontimeout,0]（CharacterGPTChatPendingPrompt）\e
+
+＊OnCharacterGPTTouchPending
+：\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\0\s[2]\![set,balloontimeout,0]!?\e
+
 ＊OnStartCharacterGPTBridge
 ：\![open,file,bridge/CharacterGPTBridge.exe]\![open,file,bridge/CharacterGPTTouchProgress.exe]\_w[1800]\![execute,websocket,ws://127.0.0.1:8766,--async=OnCharacterGPT]
 
