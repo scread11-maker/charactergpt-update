@@ -5,7 +5,7 @@ version,1
 }
 
 //########################################################################################
-//サーフェス番号の割り当て（未改造時）
+//サーフェス番号の割り当て
 //
 //0～9、20～38、100～138・・\0の表情
 //10～12 ・・・・・・・・\1の表情
@@ -612,7 +612,7 @@ animation0.pattern2,overlay,8102,50,0,0
 animation0.pattern3,overlay,-1,50,0,0
 }
 
-surface.append2,22,102,112 //ジト目
+surface.append2,102 //ジト目
 {
 animation0.interval,sometimes
 animation0.pattern0,overlay,8003,50,0,0
@@ -635,7 +635,7 @@ animation100.pattern3,overlay,8200,140,0,0
 animation100.pattern4,overlay,-1,130,0,0
 }
 
-surface.append2,102
+surface.append2,22,102,112
 {
 animation100.interval,talk
 animation100.pattern0,overlay,8202,140,0,0
