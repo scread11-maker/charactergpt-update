@@ -13,3 +13,5 @@ Legacy executable filenames remain unchanged for compatibility:
 
 Network-update payload includes Satori dictionaries/configuration, surface definitions, and readme.txt.
 Executable binaries, profile/character data, credentials, logs, and runtime-generated state are not distributed.
+
+Revision marker: update-presentation-surface100
