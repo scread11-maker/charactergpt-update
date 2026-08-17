@@ -1,0 +1,66 @@
+name: Fix blush surface groups
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-blush-surface-groups.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix Surface22/112 animation groups
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          p = Path('v061/shell/master/surfaces.txt')
+          text = p.read_text(encoding='utf-8')
+          before = text
+
+          text = text.replace('//サーフェス番号の割り当て（未改造時）', '//サーフェス番号の割り当て', 1)
+          text = text.replace('surface.append2,22,102,112 //ジト目', 'surface.append2,102 //ジト目', 1)
+          text = text.replace(
+              'surface.append2,102\n{\nanimation100.interval,talk',
+              'surface.append2,22,102,112\n{\nanimation100.interval,talk',
+              1,
+          )
+
+          if text == before:
+              raise SystemExit('expected animation-group fixes were not applied')
+          if 'surface.append2,22,102,112 //ジト目' in text:
+              raise SystemExit('22/112 still present in blink group')
+          if 'surface.append2,22,102,112\n{\nanimation100.interval,talk' not in text:
+              raise SystemExit('22/112 missing from talk group')
+
+          p.write_text(text, encoding='utf-8', newline='\n')
+          data = p.read_bytes()
+          md5 = hashlib.md5(data).hexdigest()
+          size = len(data)
+
+          manifest = Path('v061/updates2.dau')
+          lines = manifest.read_text(encoding='utf-8').splitlines()
+          prefix = 'shell/master/surfaces.txt\x01'
+          for i, line in enumerate(lines):
+              if line.startswith(prefix):
+                  lines[i] = f'shell/master/surfaces.txt\x01{md5}\x01size={size}\x01'
+                  break
+          else:
+              raise SystemExit('surfaces manifest entry missing')
+          manifest.write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
+          print(f'surfaces.txt md5={md5} size={size}')
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add v061/shell/master/surfaces.txt v061/updates2.dau
+          git diff --cached --check
+          git commit -m 'Fix blush surface animation groups'
+          git push
