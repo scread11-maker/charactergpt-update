@@ -1,6 +1,6 @@
 name: Add runtime pending presentation
 
-on:
+'on':
   push:
     branches: [main]
     paths:
