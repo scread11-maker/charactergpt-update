@@ -296,10 +296,12 @@
       "target": "*",
       "gesture": "*",
       "meaning": [
-        "wry_smile = restrained smile; context may make it teasing, bitter, resigned, awkward, or dryly amused"
+        "wry_smile = restrained/wry smile; context may make it bitter, resigned, awkward, dryly amused, or gently teasing",
+        "smirk remains valid for a more knowingly teasing, sardonic, or self-assured reading; both may share the same visual surface"
       ],
       "notes": [
-        "Do not assume mockery or superiority. embarrassed_wry_smile is the same visual expression with supported blush/embarrassment."
+        "Choose wry_smile or smirk from context; do not infer mockery or superiority from the visual surface alone.",
+        "embarrassed_wry_smile and embarrassed_smirk remain valid blush variants of the same visual family."
       ]
     },
     {
