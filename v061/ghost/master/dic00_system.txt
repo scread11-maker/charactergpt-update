@@ -189,7 +189,7 @@
 ＃ Normal success messages follow sspgpt dialogue duration; failures stay open.
 
 ＊OnUpdateBegin
-：
+：\0\s[25]\![set,balloontimeout,0]sspgpt 正在更新……\e
 
 ＊OnUpdateReady
 ：
