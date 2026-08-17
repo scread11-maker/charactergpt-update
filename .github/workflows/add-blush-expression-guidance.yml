@@ -25,52 +25,27 @@ jobs:
           data = p.read_bytes()
           if hashlib.md5(data).hexdigest() != '804583d164f86c0bf73fd25dd94df414' or len(data) != 14923:
               raise SystemExit('unexpected interaction_rules baseline')
-          text = data.decode('utf-8')
-          old = '''    {
-      "id": "wry_smile_expression",
-      "target": "*",
-      "gesture": "*",
-      "meaning": [
-        "wry_smile = restrained/wry smile; context may make it bitter, resigned, awkward, dryly amused, or gently teasing",
-        "smirk remains valid for a more knowingly teasing, sardonic, or self-assured reading; both may share the same visual surface"
-      ],
-      "notes": [
-        "Choose wry_smile or smirk from context; do not infer mockery or superiority from the visual surface alone.",
-        "embarrassed_wry_smile and embarrassed_smirk remain valid blush variants of the same visual family."
-      ]
-    },
-'''
-          new = '''    {
-      "id": "wry_smile_expression",
-      "target": "*",
-      "gesture": "*",
-      "meaning": [
-        "wry_smile = restrained/wry smile; context may make it bitter, resigned, awkward, dryly amused, or gently teasing",
-        "smirk remains valid for a more knowingly teasing, sardonic, or self-assured reading; both may share the same visual surface"
-      ],
-      "notes": [
-        "Choose wry_smile or smirk from context; do not infer mockery or superiority from the visual surface alone.",
-        "embarrassed_wry_smile and embarrassed_smirk remain valid in the same blush-capable visual family."
-      ]
-    },
-    {
-      "id": "blush_expression_modifier",
-      "target": "*",
-      "gesture": "*",
-      "meaning": [
-        "blush or blush_* = visibly flushed/red-faced; visible redness does not by itself mean embarrassment",
-        "Use blush for strong facial flushing from embarrassment, intense anger/annoyance, agitation, or other emotional heat; blush_angry is valid when anger is strong enough to redden the face"
-      ],
-      "notes": [
-        "embarrassed and embarrassed_* remain valid when embarrassment/shyness is the semantic state; blush emphasizes visible flushing. Both use the same blush-capable visual surfaces."
-      ]
-    },
-'''
-          if text.count(old) != 1:
-              raise SystemExit('expected wry rule not found exactly once')
-          text = text.replace(old, new, 1)
-          json.loads(text)
-          out = text.encode('utf-8')
+
+          obj = json.loads(data)
+          rules = obj.get('rules', [])
+          hits = [i for i, rule in enumerate(rules) if rule.get('id') == 'wry_smile_expression']
+          if len(hits) != 1:
+              raise SystemExit(f'wry_smile_expression hits={len(hits)}')
+          i = hits[0]
+          rules[i]['notes'][1] = 'embarrassed_wry_smile and embarrassed_smirk remain valid in the same blush-capable visual family.'
+          rules.insert(i + 1, {
+              'id': 'blush_expression_modifier',
+              'target': '*',
+              'gesture': '*',
+              'meaning': [
+                  'blush or blush_* = visibly flushed/red-faced; visible redness does not by itself mean embarrassment',
+                  'Use blush for strong facial flushing from embarrassment, intense anger/annoyance, agitation, or other emotional heat; blush_angry is valid when anger is strong enough to redden the face'
+              ],
+              'notes': [
+                  'embarrassed and embarrassed_* remain valid when embarrassment/shyness is the semantic state; blush emphasizes visible flushing. Both use the same blush-capable visual surfaces.'
+              ]
+          })
+          out = (json.dumps(obj, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
           md5 = hashlib.md5(out).hexdigest()
           size = len(out)
           if md5 != 'bb9a8235ab51550420fc715fb9a117e3' or size != 15566:
