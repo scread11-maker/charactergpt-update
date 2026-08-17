@@ -1,0 +1,832 @@
+﻿＃ CharacterGPT alpha5-r6-test31l touch/contact-state adapter
+＃ test31l preserves unified impulse priority and adds only a generic click-memory arbiter.
+＃ Runtime POINTER timing is unchanged: a provisional single still reaches Runtime immediately.
+＃ Only touch-memory commit waits 600ms so a completed double click cancels the provisional light_touch memory instead of accumulating light+heavy.
+＃ Balloon-transparent contact state machine: MOVING -> STATIONARY -> RESTING -> MOVING.
+＃ MouseLeave remains Runtime-websocket silent; r6-test13 sends only a local contact-lifecycle release notification to the Touch Contact helper; release is state metadata, not a gesture category.
+＃ Visible-balloon MOVE uses SATORI script-head \\C so hover does not replace the current balloon.
+＃ v0.5.7 touch semantics are preserved in the Bridge.
+＃ Only recognised touch-collision MOVE events are transported.
+＃ MouseLeave / MouseLeaveAll never go to the legacy Runtime/WS; active contacts may close through the local Touch Contact helper.
+＃ They never go to Bridge/LLM and never participate in gesture intensity.
+＃ During talking/choosing/visible balloon, Leave returns no script at all.
+＃ Local reflex timing:
+＃ - Head/Hair keep Runtime's sustained-touch timing.
+＃ - Bust hover is transient: first MOVE uses surface 2 (surprised, no hoppe) and leaving restores normally.
+＃ - Bust click is latched with surface 22 (surprised + hoppe, base1) until formal Runtime/LLM presentation owns the expression.
+＃ - Bust single-click semantics are deferred briefly so a double click becomes canonical grab without leaking a preceding light_touch.
+＃ - Runtime v0.5.24 compatibility: Bust double-click is transported as legacy POINTER|double; Bridge v0.5.26 rewrites the outbound LLM semantic event from heavy_tap to grab.
+＃ - Every recognised touch exits idle-reading and restarts the 3-minute local idle-reading timer.
+＃ - Book single click uses surface 0/base1 and is locally latched for at least 1000ms so MouseLeave cannot erase it immediately.
+＃ - Book MOVE/stroking also reacts locally on first movement with surface 0/base1 while keeping Runtime semantics unchanged.
+
+＊OnMouseClick	（Ｒ５）==0
+＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Head
+＞CharacterGPTSingleClick	（Ｒ３）==0&&（Ｒ４）==Hair
+＞CharacterGPTBustClickCandidate	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTBookSingleClick	（Ｒ３）==0&&（Ｒ４）==Book
+＞CharacterGPTSingleClick	（Ｒ３）==1&&（Ｒ４）==Head
+＞CharacterGPTSingleClick	（Ｒ３）==1&&（Ｒ４）==Bust
+＞CharacterGPTSingleClick	（Ｒ３）==1&&（Ｒ４）==Wing
+＞OnCharacterGPTMenu
+
+＊CharacterGPTSingleClick
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＄CharacterGPTBustClickLatched	0
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTSingleMemoryPending	1
+＄CharacterGPTSingleMemoryCharacter	（Ｒ３）
+＄CharacterGPTSingleMemoryTarget	（Ｒ４）
+：\![timerraise,180000,1,OnCharacterGPTIdleReading]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]\![timerraise,600,1,CharacterGPTSingleMemoryCommit]
+
+＊CharacterGPTSingleMemoryCommit
+＞CharacterGPTSingleMemoryCommitDo	（CharacterGPTSingleMemoryPending）==1
+：
+
+＊CharacterGPTSingleMemoryCommitDo
+＄CharacterGPTSingleMemoryPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/memory,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTSingleMemoryTarget）,--param=character_id=（CharacterGPTSingleMemoryCharacter）,--param=state=light_touch,--timeout=1]
+
+＊CharacterGPTBustClickCandidate
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＄CharacterGPTBustClickPending	1
+＄CharacterGPTBustClickCharacter	（Ｒ３）
+＄CharacterGPTBustClickPart	（Ｒ４）
+＄CharacterGPTBustClickX	（Ｒ０）
+＄CharacterGPTBustClickY	（Ｒ１）
+＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBustClickLatched	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[22]\![timerraise,600,1,CharacterGPTBustSingleCommit]
+
+＊CharacterGPTBustSingleCommit
+＞CharacterGPTBustSingleCommitDo	（CharacterGPTBustClickPending）==1&&（CharacterGPTLinkedBusy）!=1
+：
+
+＊CharacterGPTBustSingleCommitDo
+＄CharacterGPTBustClickPending	0
+：（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（CharacterGPTBustClickCharacter）|（CharacterGPTBustClickPart）|（CharacterGPTBustClickX）|（CharacterGPTBustClickY）]\![execute,http-post,http://127.0.0.1:8769/touch/memory,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTBustClickPart）,--param=character_id=（CharacterGPTBustClickCharacter）,--param=state=light_touch,--timeout=1]
+
+＊CharacterGPTBookSingleClick
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＄CharacterGPTBustClickLatched	0
+＄CharacterGPTBookLocalActive	1
+＄CharacterGPTBookClickLatched	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[0]\![timerraise,1000,1,CharacterGPTBookLocalRelease]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|single|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]
+
+＊CharacterGPTBookLocalRelease
+＄CharacterGPTBookClickLatched	0
+＞CharacterGPTBookLocalReleaseRestore	（CharacterGPTBookLocalActive）!=1&&（CharacterGPTIdleReadingActive）!=1&&（CharacterGPTLinkedBusy）!=1
+：
+
+＊CharacterGPTBookLocalReleaseRestore
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
+
+＊OnMouseDoubleClick	（Ｒ５）==0
+＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Head
+＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Hair
+＞CharacterGPTBustGrab	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTDoubleClick	（Ｒ３）==0&&（Ｒ４）==Book
+＞CharacterGPTDoubleClick	（Ｒ３）==1&&（Ｒ４）==Head
+＞CharacterGPTDoubleClick	（Ｒ３）==1&&（Ｒ４）==Bust
+＞CharacterGPTDoubleClick	（Ｒ３）==1&&（Ｒ４）==Wing
+
+＊CharacterGPTDoubleClick
+＞CharacterGPTDoubleClickCancelMemory	（CharacterGPTSingleMemoryPending）==1&&（CharacterGPTSingleMemoryCharacter）==（Ｒ３）&&（CharacterGPTSingleMemoryTarget）==（Ｒ４）
+＞CharacterGPTDoubleClickDo
+
+＊CharacterGPTDoubleClickCancelMemory
+＄CharacterGPTSingleMemoryPending	0
+＞CharacterGPTDoubleClickDo
+
+＊CharacterGPTDoubleClickDo
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＄CharacterGPTBustClickLatched	0
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,180000,1,OnCharacterGPTIdleReading]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]\![execute,http-post,http://127.0.0.1:8769/touch/memory,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=state=double,--timeout=1]
+
+＊CharacterGPTBustGrab
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＄CharacterGPTBustClickPending	0
+＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBustClickLatched	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[22]（when，（count，（Status），balloon）>0，\C\![set,balloontimeout,0]）\![send,websocket,ws://127.0.0.1:8766,POINTER|double|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）]\![execute,http-post,http://127.0.0.1:8769/touch/memory,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=state=grab,--timeout=1]
+
+＊OnMouseMove
+＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Head
+＞CharacterGPTTouchMove	（Ｒ３）==0&&（Ｒ４）==Hair
+＞CharacterGPTBustTouchMove	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTBookTouchMove	（Ｒ３）==0&&（Ｒ４）==Book
+＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Head
+＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Bust
+＞CharacterGPTTouchMove	（Ｒ３）==1&&（Ｒ４）==Wing
+
+＊CharacterGPTTouchMove
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＞CharacterGPTTouchBoundaryMainPass	（CharacterGPTContactBoundaryPending）==1
+＞CharacterGPTTouchImplicitBoundaryMain	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchCharacter）!=（Ｒ３）
+＞CharacterGPTTouchImplicitBoundaryMain	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchTarget）!=（Ｒ４）
+＞CharacterGPTTouchContactStartMain	（CharacterGPTTemporalTouchActive）!=1
+＞CharacterGPTTouchContactResumeMain	（CharacterGPTTemporalTouchMoving）!=1
+＞CharacterGPTTouchMovePreserveBalloon	（count，（Status），balloon）>0
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchMovePreserveBalloon
+＄スクリプトの一番頭	\C
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTBustTouchMove
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＞CharacterGPTTouchBoundaryBustPass	（CharacterGPTContactBoundaryPending）==1
+＞CharacterGPTTouchImplicitBoundaryBust	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchCharacter）!=（Ｒ３）
+＞CharacterGPTTouchImplicitBoundaryBust	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchTarget）!=（Ｒ４）
+＞CharacterGPTTouchContactStartBust	（CharacterGPTTemporalTouchActive）!=1
+＞CharacterGPTTouchContactResumeBust	（CharacterGPTTemporalTouchMoving）!=1
+＞CharacterGPTBustTouchMovePreserveBalloon	（count，（Status），balloon）>0
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＞CharacterGPTBustTouchMoveFirst	（CharacterGPTBustLocalActive）!=1
+：\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTBustTouchMoveFirst
+＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[2]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTBustTouchMovePreserveBalloon
+＄スクリプトの一番頭	\C
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＞CharacterGPTBustTouchMoveFirstPreserveBalloon	（CharacterGPTBustLocalActive）!=1
+：\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTBustTouchMoveFirstPreserveBalloon
+＄スクリプトの一番頭	\C
+＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[2]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTBookTouchMove
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＞CharacterGPTTouchBoundaryBookPass	（CharacterGPTContactBoundaryPending）==1
+＞CharacterGPTTouchImplicitBoundaryBook	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchCharacter）!=（Ｒ３）
+＞CharacterGPTTouchImplicitBoundaryBook	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchTarget）!=（Ｒ４）
+＞CharacterGPTTouchContactStartBook	（CharacterGPTTemporalTouchActive）!=1
+＞CharacterGPTTouchContactResumeBook	（CharacterGPTTemporalTouchMoving）!=1
+＞CharacterGPTBookTouchMovePreserveBalloon	（count，（Status），balloon）>0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＞CharacterGPTBookTouchMoveFirst	（CharacterGPTBookLocalActive）!=1
+：\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTBookTouchMoveFirst
+＄CharacterGPTBookLocalActive	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[0]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTBookTouchMovePreserveBalloon
+＄スクリプトの一番頭	\C
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＞CharacterGPTBookTouchMoveFirstPreserveBalloon	（CharacterGPTBookLocalActive）!=1
+：\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTBookTouchMoveFirstPreserveBalloon
+＄スクリプトの一番頭	\C
+＄CharacterGPTBookLocalActive	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[0]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＃ r6-test31e: target-change self-heal. If SATORI still believes an older target is active but a recognised MOVE arrives on a different target/character, close the stale helper lifecycle without LLM presentation and begin the newly observed contact locally.
+＊CharacterGPTTouchImplicitBoundaryMain
+＞CharacterGPTTouchImplicitBoundaryMainPreserve	（count，（Status），balloon）>0
+＄CharacterGPTPreviousTouchTarget	（CharacterGPTTemporalTouchTarget）
+＄CharacterGPTPreviousTouchCharacter	（CharacterGPTTemporalTouchCharacter）
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTPreviousTouchTarget）,--param=character_id=（CharacterGPTPreviousTouchCharacter）,--param=reason=implicit_target_change,--param=linked_busy=1,--timeout=1]\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=implicit_target_change,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＊CharacterGPTTouchImplicitBoundaryMainPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTPreviousTouchTarget	（CharacterGPTTemporalTouchTarget）
+＄CharacterGPTPreviousTouchCharacter	（CharacterGPTTemporalTouchCharacter）
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTPreviousTouchTarget）,--param=character_id=（CharacterGPTPreviousTouchCharacter）,--param=reason=implicit_target_change,--param=linked_busy=1,--timeout=1]\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=implicit_target_change,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＊CharacterGPTTouchImplicitBoundaryBust
+＞CharacterGPTTouchImplicitBoundaryBustPreserve	（count，（Status），balloon）>0
+＄CharacterGPTPreviousTouchTarget	（CharacterGPTTemporalTouchTarget）
+＄CharacterGPTPreviousTouchCharacter	（CharacterGPTTemporalTouchCharacter）
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTPreviousTouchTarget）,--param=character_id=（CharacterGPTPreviousTouchCharacter）,--param=reason=implicit_target_change,--param=linked_busy=1,--timeout=1]\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=implicit_target_change,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[2]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＊CharacterGPTTouchImplicitBoundaryBustPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTPreviousTouchTarget	（CharacterGPTTemporalTouchTarget）
+＄CharacterGPTPreviousTouchCharacter	（CharacterGPTTemporalTouchCharacter）
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTPreviousTouchTarget）,--param=character_id=（CharacterGPTPreviousTouchCharacter）,--param=reason=implicit_target_change,--param=linked_busy=1,--timeout=1]\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=implicit_target_change,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[2]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＊CharacterGPTTouchImplicitBoundaryBook
+＞CharacterGPTTouchImplicitBoundaryBookPreserve	（count，（Status），balloon）>0
+＄CharacterGPTPreviousTouchTarget	（CharacterGPTTemporalTouchTarget）
+＄CharacterGPTPreviousTouchCharacter	（CharacterGPTTemporalTouchCharacter）
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBookLocalActive	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTPreviousTouchTarget）,--param=character_id=（CharacterGPTPreviousTouchCharacter）,--param=reason=implicit_target_change,--param=linked_busy=1,--timeout=1]\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=implicit_target_change,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[0]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＊CharacterGPTTouchImplicitBoundaryBookPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTPreviousTouchTarget	（CharacterGPTTemporalTouchTarget）
+＄CharacterGPTPreviousTouchCharacter	（CharacterGPTTemporalTouchCharacter）
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBookLocalActive	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTPreviousTouchTarget）,--param=character_id=（CharacterGPTPreviousTouchCharacter）,--param=reason=implicit_target_change,--param=linked_busy=1,--timeout=1]\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=implicit_target_change,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[0]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＃ r6-test7 contact-state start/resume helpers.
+＊CharacterGPTTouchContactStartMain
+＞CharacterGPTTouchContactStartMainPreserve	（count，（Status），balloon）>0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalContactEstablished	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=first_move,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchContactStartMainPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalContactEstablished	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=first_move,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchContactResumeMain
+＞CharacterGPTTouchContactResumeMainPreserve	（count，（Status），balloon）>0
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/motion,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--timeout=1]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchContactResumeMainPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/motion,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--timeout=1]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchContactStartBust
+＞CharacterGPTTouchContactStartBustPreserve	（count，（Status），balloon）>0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalContactEstablished	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=first_move,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[2]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchContactStartBustPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalContactEstablished	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=first_move,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[2]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchContactResumeBust
+＞CharacterGPTTouchContactResumeBustPreserve	（count，（Status），balloon）>0
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/motion,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--timeout=1]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchContactResumeBustPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/motion,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--timeout=1]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchContactStartBook
+＞CharacterGPTTouchContactStartBookPreserve	（count，（Status），balloon）>0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalContactEstablished	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+＄CharacterGPTBookLocalActive	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=first_move,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[0]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchContactStartBookPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalContactEstablished	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+＄CharacterGPTBookLocalActive	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=first_move,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[0]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchContactResumeBook
+＞CharacterGPTTouchContactResumeBookPreserve	（count，（Status），balloon）>0
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/motion,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--timeout=1]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＊CharacterGPTTouchContactResumeBookPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/motion,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--timeout=1]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）]
+
+＃ alpha5-r6-test4: non-blocking re-entry boundary plus balloon-transparent MOVE.
+＃ \C must be at the true SakuraScript head in SSP. In SATORI this requires ＄スクリプトの一番頭.
+＃ Preserve branches do not change the current balloon timeout; they only prevent MOVE from replacing its contents.
+
+＊CharacterGPTTouchBoundaryMainPass
+＞CharacterGPTTouchBoundaryMainPassPreserveBalloon	（count，（Status），balloon）>0
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=reentry,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＊CharacterGPTTouchBoundaryMainPassPreserveBalloon
+＄スクリプトの一番頭	\C
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=reentry,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＊CharacterGPTTouchBoundaryBustPass
+＞CharacterGPTTouchBoundaryBustPassPreserveBalloon	（count，（Status），balloon）>0
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=reentry,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[2]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＊CharacterGPTTouchBoundaryBustPassPreserveBalloon
+＄スクリプトの一番頭	\C
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBustLocalActive	1
+＄CharacterGPTBookClickLatched	0
+＄CharacterGPTBookLocalActive	0
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=reentry,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[2]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＊CharacterGPTTouchBoundaryBookPass
+＞CharacterGPTTouchBoundaryBookPassPreserveBalloon	（count，（Status），balloon）>0
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBookLocalActive	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=reentry,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[0]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＊CharacterGPTTouchBoundaryBookPassPreserveBalloon
+＄スクリプトの一番頭	\C
+＄CharacterGPTContactBoundaryPending	0
+＄CharacterGPTBookLocalActive	1
+＄CharacterGPTIdleReadingActive	0
+＄CharacterGPTIdleReadingPending	0
+＄CharacterGPTTemporalTouchActive	1
+＄CharacterGPTTemporalTouchMoving	1
+＄CharacterGPTTemporalRestingEmitted	0
+＄CharacterGPTTemporalTouchTarget	（Ｒ４）
+＄CharacterGPTTemporalTouchCharacter	（Ｒ３）
+＄CharacterGPTTemporalTouchStage	5000
+：\![execute,http-post,http://127.0.0.1:8769/touch/start,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=reentry,--timeout=1]\![timerraise,250,1,CharacterGPTTouchEstablishedTick]\![timerraise,0,1,CharacterGPTTouchRestingTick]\![timerraise,900,1,CharacterGPTTouchStationaryTick]\![timerraise,5000,1,CharacterGPTTouchProgressTick]\![timerraise,180000,1,OnCharacterGPTIdleReading]\0\s[0]\![send,websocket,ws://127.0.0.1:8766,MOVE|（Ｒ３）|（Ｒ４）|（Ｒ０）|（Ｒ１）|（Ｒ６）|boundary=1]
+
+＃ Local leave reflex restoration.
+＃ Hover restores on leave, but a completed Bust click latches the local reflex until response presentation lifecycle clears it.
+＊OnMouseLeave
+＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Head
+＞CharacterGPTLocalLeaveMain	（Ｒ３）==0&&（Ｒ４）==Hair
+＞CharacterGPTLocalLeaveBust	（Ｒ３）==0&&（Ｒ４）==Bust
+＞CharacterGPTLocalLeaveBook	（Ｒ３）==0&&（Ｒ４）==Book
+＞CharacterGPTLocalLeaveOwl	（Ｒ３）==1&&（Ｒ４）==Head
+＞CharacterGPTLocalLeaveOwl	（Ｒ３）==1&&（Ｒ４）==Bust
+＞CharacterGPTLocalLeaveOwl	（Ｒ３）==1&&（Ｒ４）==Wing
+
+＊CharacterGPTLocalLeaveMain
+＞CharacterGPTLocalLeaveMainReleasePreserve	（CharacterGPTTemporalTouchActive）==1&&（count，（Status），balloon）>0
+＞CharacterGPTLocalLeaveMainRelease	（CharacterGPTTemporalTouchActive）==1
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＄CharacterGPTContactBoundaryPending	1
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
+
+＊CharacterGPTLocalLeaveMainRelease
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＄CharacterGPTContactBoundaryPending	1
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=mouse_leave,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（Ｒ４）&&（CharacterGPTTemporalContactEstablishedCharacter）==（Ｒ３），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（Ｒ４）||（CharacterGPTTemporalContactEstablishedCharacter）!=（Ｒ３），1）,--timeout=1]（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
+
+＊CharacterGPTLocalLeaveMainReleasePreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＄CharacterGPTContactBoundaryPending	1
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=mouse_leave,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（Ｒ４）&&（CharacterGPTTemporalContactEstablishedCharacter）==（Ｒ３），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（Ｒ４）||（CharacterGPTTemporalContactEstablishedCharacter）!=（Ｒ３），1）,--timeout=1]
+
+＊CharacterGPTLocalLeaveBust
+＞CharacterGPTLocalLeaveBustReleasePreserve	（CharacterGPTTemporalTouchActive）==1&&（count，（Status），balloon）>0
+＞CharacterGPTLocalLeaveBustRelease	（CharacterGPTTemporalTouchActive）==1
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＄CharacterGPTContactBoundaryPending	1
+＄CharacterGPTBustLocalActive	0
+＞CharacterGPTLocalLeaveBustRestore	（CharacterGPTBustClickLatched）!=1
+：
+
+＊CharacterGPTLocalLeaveBustRelease
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＄CharacterGPTContactBoundaryPending	1
+＄CharacterGPTBustLocalActive	0
+＞CharacterGPTLocalLeaveBustReleaseNoRestore	（CharacterGPTBustClickLatched）==1
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=mouse_leave,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（Ｒ４）&&（CharacterGPTTemporalContactEstablishedCharacter）==（Ｒ３），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（Ｒ４）||（CharacterGPTTemporalContactEstablishedCharacter）!=（Ｒ３），1）,--timeout=1]（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
+
+＊CharacterGPTLocalLeaveBustReleaseNoRestore
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=mouse_leave,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（Ｒ４）&&（CharacterGPTTemporalContactEstablishedCharacter）==（Ｒ３），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（Ｒ４）||（CharacterGPTTemporalContactEstablishedCharacter）!=（Ｒ３），1）,--timeout=1]
+
+＊CharacterGPTLocalLeaveBustReleasePreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＄CharacterGPTContactBoundaryPending	1
+＄CharacterGPTBustLocalActive	0
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=mouse_leave,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（Ｒ４）&&（CharacterGPTTemporalContactEstablishedCharacter）==（Ｒ３），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（Ｒ４）||（CharacterGPTTemporalContactEstablishedCharacter）!=（Ｒ３），1）,--timeout=1]
+
+＊CharacterGPTLocalLeaveBustRestore
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
+
+＊CharacterGPTLocalLeaveBook
+＞CharacterGPTLocalLeaveBookReleasePreserve	（CharacterGPTTemporalTouchActive）==1&&（count，（Status），balloon）>0
+＞CharacterGPTLocalLeaveBookRelease	（CharacterGPTTemporalTouchActive）==1
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＄CharacterGPTContactBoundaryPending	1
+＄CharacterGPTBookLocalActive	0
+＞CharacterGPTLocalLeaveBookRestore	（CharacterGPTBookClickLatched）!=1&&（CharacterGPTIdleReadingActive）!=1
+：
+
+＊CharacterGPTLocalLeaveBookRelease
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＄CharacterGPTContactBoundaryPending	1
+＄CharacterGPTBookLocalActive	0
+＞CharacterGPTLocalLeaveBookReleaseNoRestore	（CharacterGPTBookClickLatched）==1||（CharacterGPTIdleReadingActive）==1
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=mouse_leave,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（Ｒ４）&&（CharacterGPTTemporalContactEstablishedCharacter）==（Ｒ３），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（Ｒ４）||（CharacterGPTTemporalContactEstablishedCharacter）!=（Ｒ３），1）,--timeout=1]（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
+
+＊CharacterGPTLocalLeaveBookReleaseNoRestore
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=mouse_leave,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（Ｒ４）&&（CharacterGPTTemporalContactEstablishedCharacter）==（Ｒ３），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（Ｒ４）||（CharacterGPTTemporalContactEstablishedCharacter）!=（Ｒ３），1）,--timeout=1]
+
+＊CharacterGPTLocalLeaveBookReleasePreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＄CharacterGPTContactBoundaryPending	1
+＄CharacterGPTBookLocalActive	0
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=mouse_leave,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（Ｒ４）&&（CharacterGPTTemporalContactEstablishedCharacter）==（Ｒ３），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（Ｒ４）||（CharacterGPTTemporalContactEstablishedCharacter）!=（Ｒ３），1）,--timeout=1]
+
+＊CharacterGPTLocalLeaveBookRestore
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\e）
+
+＊CharacterGPTLocalLeaveOwl
+＞CharacterGPTLocalLeaveOwlReleasePreserve	（CharacterGPTTemporalTouchActive）==1&&（count，（Status），balloon）>0
+＞CharacterGPTLocalLeaveOwlRelease	（CharacterGPTTemporalTouchActive）==1
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＄CharacterGPTContactBoundaryPending	1
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\1\s[10]\e）
+
+＊CharacterGPTLocalLeaveOwlRelease
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＄CharacterGPTContactBoundaryPending	1
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=mouse_leave,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（Ｒ４）&&（CharacterGPTTemporalContactEstablishedCharacter）==（Ｒ３），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（Ｒ４）||（CharacterGPTTemporalContactEstablishedCharacter）!=（Ｒ３），1）,--timeout=1]（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\1\s[10]\e）
+
+＊CharacterGPTLocalLeaveOwlReleasePreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＄CharacterGPTContactBoundaryPending	1
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（Ｒ４）,--param=character_id=（Ｒ３）,--param=reason=mouse_leave,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（Ｒ４）&&（CharacterGPTTemporalContactEstablishedCharacter）==（Ｒ３），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（Ｒ４）||（CharacterGPTTemporalContactEstablishedCharacter）!=（Ｒ３），1）,--timeout=1]
+
+＊OnMouseLeaveAll
+＞CharacterGPTLocalLeaveAllReleasePreserve	（CharacterGPTTemporalTouchActive）==1&&（count，（Status），balloon）>0
+＞CharacterGPTLocalLeaveAllRelease	（CharacterGPTTemporalTouchActive）==1
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＞CharacterGPTLinkedTouchIgnored	（CharacterGPTLinkedBusy）==1
+＄CharacterGPTContactBoundaryPending	1
+＄CharacterGPTBustLocalActive	0
+＄CharacterGPTBookLocalActive	0
+＞CharacterGPTLocalLeaveAllRestore	（CharacterGPTBustClickLatched）!=1&&（CharacterGPTBookClickLatched）!=1&&（CharacterGPTIdleReadingActive）!=1
+：
+
+＊CharacterGPTLocalLeaveAllRelease
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＄CharacterGPTContactBoundaryPending	1
+＄CharacterGPTBustLocalActive	0
+＄CharacterGPTBookLocalActive	0
+＞CharacterGPTLocalLeaveAllReleaseNoRestore	（CharacterGPTBustClickLatched）==1||（CharacterGPTBookClickLatched）==1||（CharacterGPTIdleReadingActive）==1
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--param=character_id=（CharacterGPTTemporalTouchCharacter）,--param=reason=mouse_leave_all,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（CharacterGPTTemporalTouchTarget）&&（CharacterGPTTemporalContactEstablishedCharacter）==（CharacterGPTTemporalTouchCharacter），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（CharacterGPTTemporalTouchTarget）||（CharacterGPTTemporalContactEstablishedCharacter）!=（CharacterGPTTemporalTouchCharacter），1）,--timeout=1]（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\1\s[10]\e）
+
+＊CharacterGPTLocalLeaveAllReleaseNoRestore
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--param=character_id=（CharacterGPTTemporalTouchCharacter）,--param=reason=mouse_leave_all,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（CharacterGPTTemporalTouchTarget）&&（CharacterGPTTemporalContactEstablishedCharacter）==（CharacterGPTTemporalTouchCharacter），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（CharacterGPTTemporalTouchTarget）||（CharacterGPTTemporalContactEstablishedCharacter）!=（CharacterGPTTemporalTouchCharacter），1）,--timeout=1]
+
+＊CharacterGPTLocalLeaveAllReleasePreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchActive	0
+＄CharacterGPTTemporalTouchMoving	0
+＄CharacterGPTContactBoundaryPending	1
+＄CharacterGPTBustLocalActive	0
+＄CharacterGPTBookLocalActive	0
+：\![timerraise,250,1,CharacterGPTTouchEstablishedClearTick]\![execute,http-post,http://127.0.0.1:8769/touch/release,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--param=character_id=（CharacterGPTTemporalTouchCharacter）,--param=reason=mouse_leave_all,--param=linked_busy=（when，（CharacterGPTTemporalContactEstablished）==1&&（CharacterGPTTemporalContactEstablishedTarget）==（CharacterGPTTemporalTouchTarget）&&（CharacterGPTTemporalContactEstablishedCharacter）==（CharacterGPTTemporalTouchCharacter），（when，（CharacterGPTRecentReactionGuard）==1，1）（when，（CharacterGPTRecentReactionGuard）!=1，（CharacterGPTLinkedBusy）））（when，（CharacterGPTTemporalContactEstablished）!=1||（CharacterGPTTemporalContactEstablishedTarget）!=（CharacterGPTTemporalTouchTarget）||（CharacterGPTTemporalContactEstablishedCharacter）!=（CharacterGPTTemporalTouchCharacter），1）,--timeout=1]
+
+＊CharacterGPTLocalLeaveAllRestore
+：（when，（count，（Status），timecritical）==0&&（count，（Status），talking）==0&&（count，（Status），choosing）==0&&（count，（Status），balloon）==0，\0\s[20]\1\s[10]\e）
+
+＃ r6-test8: OnMouseHover is positive evidence that the cursor is still inside a collision.
+＃ Absence of MOVE alone is never treated as continued physical contact.
+＊OnMouseHover
+＞CharacterGPTTouchHoverConfirmed	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchMoving）==1&&（CharacterGPTTemporalTouchCharacter）==（Ｒ３）&&（CharacterGPTTemporalTouchTarget）==（Ｒ４）
+：
+
+＊CharacterGPTTouchHoverConfirmed
+＞CharacterGPTTouchHoverConfirmedPreserve	（count，（Status），balloon）>0
+＄CharacterGPTTemporalTouchMoving	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/stationary,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--timeout=1]\![timerraise,2500,1,CharacterGPTTouchRestingTick]
+
+＊CharacterGPTTouchHoverConfirmedPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchMoving	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/stationary,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--timeout=1]\![timerraise,2500,1,CharacterGPTTouchRestingTick]
+
+＊CharacterGPTLinkedTouchIgnored
+：
+
+＃ r6-test31e: local established-contact gate. It does not decide gestures; it only prevents a sub-250ms lifecycle-only exit from consuming a Bridge release request. TouchProgress still receives and records the release.
+＊CharacterGPTTouchEstablishedTick
+＞CharacterGPTTouchEstablishedTickDo	（CharacterGPTTemporalTouchActive）==1
+：
+
+＊CharacterGPTTouchEstablishedTickDo
+＄CharacterGPTTemporalContactEstablished	1
+＄CharacterGPTTemporalContactEstablishedTarget	（CharacterGPTTemporalTouchTarget）
+＄CharacterGPTTemporalContactEstablishedCharacter	（CharacterGPTTemporalTouchCharacter）
+：
+
+＊CharacterGPTTouchEstablishedClearTick
+＞CharacterGPTTouchEstablishedClearTickDo	（CharacterGPTTemporalTouchActive）!=1
+：
+
+＊CharacterGPTTouchEstablishedClearTickDo
+＄CharacterGPTTemporalContactEstablished	0
+：
+
+＃ r6-test11 stationary/resting state machine.
+＃ OnMouseHover remains positive evidence for an early stationary transition.
+＃ Fallback: every recognized MOVE restarts this 900ms local timer. If it fires while
+＃ the same contact is still active and MouseLeave has not cleared it, the cursor
+＃ is treated as stationary. MouseLeave cancels this path and, in r6-test12, closes the helper session
+＃ by clearing CharacterGPTTemporalTouchActive. The helper backdates stationary by
+＃ 900ms, so a 2100ms resting timer commits at approximately 3.0s after the last MOVE.
+＊CharacterGPTTouchStationaryTick
+＞CharacterGPTTouchStationaryTickPreserve	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchMoving）==1&&（count，（Status），balloon）>0
+＞CharacterGPTTouchStationaryTickDo	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchMoving）==1
+：
+
+＊CharacterGPTTouchStationaryTickDo
+＄CharacterGPTTemporalTouchMoving	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/stationary,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--timeout=1]\![timerraise,2100,1,CharacterGPTTouchRestingTick]
+
+＊CharacterGPTTouchStationaryTickPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchMoving	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/stationary,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--timeout=1]\![timerraise,2100,1,CharacterGPTTouchRestingTick]
+
+＊CharacterGPTTouchRestingTick
+＞CharacterGPTTouchRestingTickPreserve	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchMoving）==0&&（CharacterGPTTemporalRestingEmitted）!=1&&（count，（Status），balloon）>0
+＞CharacterGPTTouchRestingTickDo	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchMoving）==0&&（CharacterGPTTemporalRestingEmitted）!=1
+：
+
+＊CharacterGPTTouchRestingTickDo
+＄CharacterGPTTemporalRestingEmitted	1
+：\![execute,http-post,http://127.0.0.1:8769/touch/resting,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--timeout=2]
+
+＊CharacterGPTTouchRestingTickPreserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalRestingEmitted	1
+：\![execute,http-post,http://127.0.0.1:8769/touch/resting,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--timeout=2]
+
+＃ r6-test6 long-stroke progress checkpoints.
+＃ MouseLeave only clears CharacterGPTTemporalTouchActive; no HTTP/websocket is emitted there.
+＃ The same timer event name is restarted on each boundary start, preventing stale-session timers.
+＊CharacterGPTTouchProgressTick
+＞CharacterGPTTouchProgressTick5000Preserve	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchStage）==5000&&（count，（Status），balloon）>0
+＞CharacterGPTTouchProgressTick5000	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchStage）==5000
+＞CharacterGPTTouchProgressTick10000Preserve	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchStage）==10000&&（count，（Status），balloon）>0
+＞CharacterGPTTouchProgressTick10000	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchStage）==10000
+＞CharacterGPTTouchProgressTick15000Preserve	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchStage）==15000&&（count，（Status），balloon）>0
+＞CharacterGPTTouchProgressTick15000	（CharacterGPTTemporalTouchActive）==1&&（CharacterGPTTemporalTouchStage）==15000
+：
+
+＊CharacterGPTTouchProgressTick5000
+＄CharacterGPTTemporalTouchStage	10000
+：\![execute,http-post,http://127.0.0.1:8769/touch/progress,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--param=duration_ms=5000,--timeout=2]\![timerraise,5000,1,CharacterGPTTouchProgressTick]
+
+＊CharacterGPTTouchProgressTick5000Preserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchStage	10000
+：\![execute,http-post,http://127.0.0.1:8769/touch/progress,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--param=duration_ms=5000,--timeout=2]\![timerraise,5000,1,CharacterGPTTouchProgressTick]
+
+＊CharacterGPTTouchProgressTick10000
+＄CharacterGPTTemporalTouchStage	15000
+：\![execute,http-post,http://127.0.0.1:8769/touch/progress,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--param=duration_ms=10000,--timeout=2]\![timerraise,5000,1,CharacterGPTTouchProgressTick]
+
+＊CharacterGPTTouchProgressTick10000Preserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchStage	15000
+：\![execute,http-post,http://127.0.0.1:8769/touch/progress,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--param=duration_ms=10000,--timeout=2]\![timerraise,5000,1,CharacterGPTTouchProgressTick]
+
+＊CharacterGPTTouchProgressTick15000
+＄CharacterGPTTemporalTouchStage	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/progress,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--param=duration_ms=15000,--timeout=2]
+
+＊CharacterGPTTouchProgressTick15000Preserve
+＄スクリプトの一番頭	\C
+＄CharacterGPTTemporalTouchStage	0
+：\![execute,http-post,http://127.0.0.1:8769/touch/progress,--nodescript,--nofile=UTF-8,--param=target=（CharacterGPTTemporalTouchTarget）,--param=duration_ms=15000,--timeout=2]
