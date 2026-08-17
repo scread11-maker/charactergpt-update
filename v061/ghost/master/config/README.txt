@@ -1,4 +1,4 @@
-CharacterGPT v0.5.30 - Local Interaction + Emotional Context
+sspgpt interaction/context configuration
 
 Files
 - interaction_rules.json: author/default interpretation rules.
@@ -6,7 +6,7 @@ Files
 - reaction_style.json: reaction/context preferences.
 - runtime_context_rules.json: live SSP/Shell and Bridge context semantics.
 - emotional_state_rules.json: short-term local affect decay and reaction-to-state weights.
-- touch_memory_rules.json: independent per-target short-term physical touch TTL; does not modify emotional state.
+- touch_memory_rules.json: independent per-target short-term physical touch salience; does not modify emotional state.
 
 User overrides
 Create same-named interaction/reaction files under:
@@ -44,52 +44,38 @@ Physical target semantics
 - Owl.Bust = owl body
 - Owl.Wing = owl wing
 
-Important separation
+Physical truth and interpretation
 OBSERVED PHYSICAL EVENT is a Runtime-resolved fact. The LLM must not change which body part/object was involved and must not invent contact for Book look_at.
 interaction_rules.json describes possible interpretation/reaction framing. Physical contact does not by itself prove motive, romance, sexuality, or relationship status.
+light_tap is accepted as a legacy alias, but new single-click events canonicalize to light_touch.
+Hair means the long hair hanging behind the character, not hair on top of the head.
+Book look_at means only a brief glance; interest/reading intent is not assumed.
+Bust double click canonicalizes to grab, and its preceding single-click candidate is suppressed when a double click completes.
 
 Runtime memory vs emotional context
 - Runtime RECENT EVENTS and PERSISTENT COUNTS answer what happened and how often.
 - Bridge CURRENT EMOTIONAL CONTEXT answers what short-term affect remains from prior LLM reactions.
 - Emotional context is stored at ghost/master/profile/emotional_state.json and is never part of Character or autobiographical Memory.
+- Short-term affect channels: positive, shy, wary, annoyed, downcast.
+- User-facing primary labels: neutral, pleased, cheerful, shy, wary, annoyed, upset, downcast.
+- Default half-life: 300 seconds.
+- dialogue_weight: 0.65.
+- neutral_threshold: 0.05.
+- physical_weight: 1.0.
 - It decays toward neutral over time instead of resetting after each balloon.
-- Physical-event reactions contribute at full configured weight; ordinary dialogue contributes at a lower configured weight.
 - The state is derived from the LLM's structured emotion output, so a touch is not hard-coded to mean affection, anger, embarrassment, etc.
 - The state should influence tone, expectation, tolerance and interpretation, but should not be recited as labels, scores, counters or timestamps.
 - A new event may strengthen, soften, redirect or resolve the prior state.
-- emotional_state_rules.json is hot-read by Bridge for each request/update and can tune half-life and impulse weights online.
+- emotional_state_rules.json is hot-read by Bridge for each request/update.
 
 Memory-expression policy
 - Recent events are private memory, not a narration script.
 - Memory should usually change tone, emotion, expectation, tolerance, or interpretation without being spoken aloud.
-- Previous events should be explicitly mentioned only when they materially determine the current situation (direct repetition, an immediately ignored warning/boundary, direct continuation, or an explicit user callback).
+- Previous events should be explicitly mentioned only when they materially determine the current situation.
 - For repetition, prefer implicit continuity such as 「還來？」 or a changed tone rather than reciting the event sequence or touch counts.
 - Current physical actions also do not need to be restated in speech; the character may simply react.
 
-v0.5.19 semantic calibration
-- light_tap is accepted as a legacy alias, but new single-click events canonicalize to light_touch.
-- Hair means the long hair hanging behind the character, not hair on top of the head.
-- Book look_at means only a brief glance; interest/reading intent is not assumed.
-
-v0.5.25 Bust double-click calibration
-- Bust double click canonicalizes to grab.
-- The preceding single-click candidate is suppressed by the Satori click arbiter when a double click completes.
-- Runtime accepts the resulting grab event as an LLM-triggering physical interaction instead of dropping it.
-
-v0.5.29 local emotional context
-- Short-term affect channels: positive, shy, wary, annoyed, downcast.
-- User-facing primary labels derived from those channels: neutral, pleased, cheerful, shy, wary, annoyed, upset, downcast.
-- Default half-life: 240 seconds.
-- This layer complements Runtime event/count memory; it does not replace or duplicate those counters.
-
-v0.5.30 emotional persistence tuning
-- dialogue_weight: 0.65 (was 0.35).
-- neutral_threshold: 0.05 (was 0.08).
-- half_life_seconds: 300 (was 240).
-- physical_weight remains 1.0.
-- Goal: make ordinary-dialogue affect carry over perceptibly into following turns while preserving decay and allowing new events to redirect or resolve it.
-
-r6-test23 weighted half-life touch memory
+Touch salience
 - profile/touch_state.json remains independent from profile/emotional_state.json.
 - Touch strength uses an independent 300-second half-life by default.
 - New gesture impulses accumulate with diminishing gain; strength is fuzzy physical salience, not an exact count or emotion intensity.
@@ -98,15 +84,14 @@ r6-test23 weighted half-life touch memory
 - Bridge receives only compact active target/strength/state lines, ordered older -> newer using a local-only timestamp.
 - touch_memory_rules.json is independent and does not modify emotional_state_rules.json.
 
-
-r6-test31x stable/dynamic profile separation
+Stable/dynamic profile separation
 - character/summary.md is stable bounded profile only. It must never contain the RecentPhysicalInteractions dynamic block.
 - character/t.md is a hidden dynamic transport file owned by TouchProgress. The normal manifest loads both t.md and summary.md, preserving live salience without contaminating stable profile generation.
 - details_.json remains character.md + appearance.md for request-time full-detail routing.
 - Touch model/impulse hierarchy remains stable generated policy in summary.md; only decayed per-target salience is dynamic.
-- bridge/prompt_audit.log is written after successful ProfileRefresh. bridge/prompt_audit_report.txt is generated automatically on normal Ghost shutdown and may also be regenerated manually with CharacterGPTPromptAudit.ps1.
+- bridge/prompt_audit.log is written after successful ProfileRefresh. bridge/prompt_audit_report.txt is generated on normal Ghost shutdown and may also be regenerated manually with CharacterGPTPromptAudit.ps1.
 
-
-r6-test31y presentation defer
-- A release immediately after a visible reaction (2000 ms window) may be locally presentation-deferred. This does not preserve contact: release still ends the physical lifecycle.
+Release presentation
+- A release immediately after a visible reaction (2000 ms window) may be locally presentation-deferred.
+- Presentation defer never preserves contact: release still ends the physical lifecycle.
 - Current-state truth remains authoritative over salience/history.
