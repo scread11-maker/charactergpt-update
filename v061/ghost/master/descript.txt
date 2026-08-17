@@ -1,9 +1,8 @@
 charset,UTF-8
 type,ghost
-name,CharacterGPT Prototype v0.6.0-alpha5-r6-test31i Identity + Resting + Strong Priority
-sakura.name,CharacterGPT
+name,伺的なGPT
+sakura.name,慕娜
 kero.name,Owl
-craftman,prototype
-craftmanw,CharacterGPT Prototype
+craftman, ChatGPT-5.6 Sol
 homeurl,https://raw.githubusercontent.com/scread11-maker/charactergpt-update/main/v061/
 shiori,satori.dll
