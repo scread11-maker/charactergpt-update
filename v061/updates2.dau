@@ -1,10 +1,10 @@
 ghost/master/descript.txt443ce81c472863d59e44993e1b9e557asize=208
 ghost/master/dic00_system.txta1a894ca736ab1493d63a5ee4cfbc0fbsize=14158
-ghost/master/dic01_chat.txtfae585fd8548d2d4a54055890733f7c5size=336
+ghost/master/dic01_chat.txta88a5317d7e15198e59986b19b8b918fsize=256
 ghost/master/dic02_touch.txtf8acea44bb14bc2633a09b2107b3c74dsize=68264
 ghost/master/satori_bootconf.txt910136c268319686dd88180795009f14size=18
 ghost/master/satori_conf.txtcb36ec547a2c2044ed556570c5be9362size=53
-ghost/master/config/README.txt66318638d44f1bd96b9455c710fc7d15size=7318
+ghost/master/config/README.txt8d0319dd44b8e53726e067479f847e82size=6346
 ghost/master/config/context_audit_policy.json36dbbc887a9acad0109f5198b173b830size=1204
 ghost/master/config/emotional_state_rules.jsondb2a8ab14ee0e05f6101262ed45c2d67size=561
 ghost/master/config/touch_memory_rules.json5baff77075c0dc9dff3aff61e0d2d8casize=303
