@@ -1,0 +1,13 @@
+{
+  "format_version": 1,
+  "enabled": true,
+  "mode": "local_existing_state_only",
+  "llm_prompt_injection": false,
+  "llm_output_fields_added": false,
+  "physical_audit": "touch_progress.log: STARTED/STATE/RESTING_DETECTED/RELEASE_* + TOUCH_MEMORY_SET",
+  "affect_audit": "profile/emotional_state.json (Bridge local state; do not inject audit metadata)",
+  "purpose": "Verify current physical facts, decayed touch salience, and local affect without spending tokens on diagnostics.",
+  "prompt_audit": "profile/prompt_audit.log records successful local summary refresh sizes/hashes; bridge/CharacterGPTPromptAudit.ps1 correlates existing bridge.log and touch_progress.log without network calls.",
+  "token_accounting": "Runtime usage lines: exact input/output/total for logged Runtime-mediated calls. TouchProgress direct 8767 calls: request/retry/present/stale counts only; token usage and cached_input are explicitly unknown until exposed by a future safe instrumentation point.",
+  "feature_freeze": "r6-test31w changes observability only. No interaction classifier, priority, memory, routing, lifecycle, Satori dialogue, Runtime binary, Bridge binary, or TouchProgress binary behavior is changed."
+}
