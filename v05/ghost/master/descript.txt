@@ -1,9 +1,0 @@
-charset,UTF-8
-type,ghost
-name,CharacterGPT Prototype v0.5.30
-sakura.name,CharacterGPT
-kero.name,Owl
-craftman,prototype
-craftmanw,CharacterGPT Prototype
-homeurl,https://raw.githubusercontent.com/scread11-maker/charactergpt-update/main/v05/
-shiori,satori.dll
