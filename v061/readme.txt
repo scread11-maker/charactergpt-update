@@ -1,27 +1,15 @@
-CharacterGPT v0.6.1 Satori/text update channel
+sspgpt v0.6.1 Satori/text update channel
 
 Baseline: v0.6.0-alpha5-r6-test31aa (2026-08-17).
 
-This channel is intentionally limited to the Satori/text/config layer while v0.6.1 local behavior is developed.
+User-visible ghost name: 伺的なGPT.
+Project/work-folder naming: sspgpt_proto_v06.
 
-Current executable baseline remains test31aa:
+This channel is intentionally limited to the Satori/text/config layer.
+Legacy executable filenames remain unchanged for compatibility:
 - CharacterGPTBridge.exe
 - CharacterGPTRuntime.exe
 - CharacterGPTTouchProgress.exe
 
-Network-update payload includes:
-- ghost/master/descript.txt
-- Satori dictionaries and Satori configuration
-- ghost/master/config/*
-- shell/master/surfaces.txt
-- shell/master/surfacetable.txt
-- readme.txt
-
-Not distributed by routine online update:
-- executable binaries
-- ghost/master/profile/*
-- ghost/master/character/*
-- credentials / API keys
-- logs and runtime-generated state
-
-Development rule: v0.6.1 Satori changes are published here only after local validation against the test31aa stable executable baseline.
+Network-update payload includes Satori dictionaries/configuration, surface definitions, and readme.txt.
+Executable binaries, profile/character data, credentials, logs, and runtime-generated state are not distributed.
