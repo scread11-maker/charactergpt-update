@@ -67,11 +67,11 @@
 
 ＊OnEnableChatGPTConnection
 ＄CharacterGPTChatGPTLinkEnabled	1
-：\![open,file,bridge/CharacterGPTContextService.exe]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]ChatGPT 連線已開啟。\e
+：\![open,file,Plug/CharacterGPTContextService.exe]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]ChatGPT 連線已開啟。\e
 
 ＊OnDisableChatGPTConnection
 ＄CharacterGPTChatGPTLinkEnabled	0
-：\![open,file,bridge/CharacterGPTContextServiceStop.cmd]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]ChatGPT 連線已關閉。\e
+：\![open,file,Plug/CharacterGPTContextServiceStop.cmd]\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]ChatGPT 連線已關閉。\e
 
 ＊OnBalloonDurationMenu
 ＄CharacterGPTIdleReadingActive	0
