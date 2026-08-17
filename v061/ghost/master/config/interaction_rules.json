@@ -301,7 +301,19 @@
       ],
       "notes": [
         "Choose wry_smile or smirk from context; do not infer mockery or superiority from the visual surface alone.",
-        "embarrassed_wry_smile and embarrassed_smirk remain valid blush variants of the same visual family."
+        "embarrassed_wry_smile and embarrassed_smirk remain valid in the same blush-capable visual family."
+      ]
+    },
+    {
+      "id": "blush_expression_modifier",
+      "target": "*",
+      "gesture": "*",
+      "meaning": [
+        "blush or blush_* = visibly flushed/red-faced; visible redness does not by itself mean embarrassment",
+        "Use blush for strong facial flushing from embarrassment, intense anger/annoyance, agitation, or other emotional heat; blush_angry is valid when anger is strong enough to redden the face"
+      ],
+      "notes": [
+        "embarrassed and embarrassed_* remain valid when embarrassment/shyness is the semantic state; blush emphasizes visible flushing. Both use the same blush-capable visual surfaces."
       ]
     },
     {
