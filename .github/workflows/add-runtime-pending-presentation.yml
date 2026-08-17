@@ -1,6 +1,6 @@
 name: Add runtime pending presentation
 
-'on':
+on:
   push:
     branches: [main]
     paths:
@@ -28,27 +28,30 @@ jobs:
           if not data.startswith(b'\xef\xbb\xbf'):
               raise SystemExit('dic00 BOM missing')
           text = data[3:].decode('utf-8')
-          anchor = '''＊OnCharacterGPTClose
-＄CharacterGPTBustClickLatched\t0
-：\\0\\s[3]\\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]sspgpt Runtime 已中斷。\\e
-
-'''
-          insert = '''＊OnCharacterGPTClose
-＄CharacterGPTBustClickLatched\t0
-：\\0\\s[3]\\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]sspgpt Runtime 已中斷。\\e
-
-＠CharacterGPTChatPendingPrompt
-嗯……
-等我一下。
-我想一下……
-
-＊OnCharacterGPTChatPending
-：\\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\\0\\s[122]\\![set,balloontimeout,0]（CharacterGPTChatPendingPrompt）\\e
-
-＊OnCharacterGPTTouchPending
-：\\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\\0\\s[2]\\![set,balloontimeout,0]!?\\e
-
-'''
+          anchor_lines = [
+              '＊OnCharacterGPTClose',
+              '＄CharacterGPTBustClickLatched\t0',
+              '：\\0\\s[3]\\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]sspgpt Runtime 已中斷。\\e',
+          ]
+          anchor = '\n'.join(anchor_lines) + '\n\n'
+          insert_lines = [
+              '＊OnCharacterGPTClose',
+              '＄CharacterGPTBustClickLatched\t0',
+              '：\\0\\s[3]\\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]sspgpt Runtime 已中斷。\\e',
+              '',
+              '＠CharacterGPTChatPendingPrompt',
+              '嗯……',
+              '等我一下。',
+              '我想一下……',
+              '',
+              '＊OnCharacterGPTChatPending',
+              '：\\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\\0\\s[122]\\![set,balloontimeout,0]（CharacterGPTChatPendingPrompt）\\e',
+              '',
+              '＊OnCharacterGPTTouchPending',
+              '：\\![timerraise,0,1,OnCharacterGPTSurfaceRestore]\\![timerraise,0,1,OnCharacterGPTBalloonTimeout]\\0\\s[2]\\![set,balloontimeout,0]!?\\e',
+              '',
+          ]
+          insert = '\n'.join(insert_lines) + '\n'
           if text.count(anchor) != 1:
               raise SystemExit('expected OnCharacterGPTClose anchor not found exactly once')
           text = text.replace(anchor, insert, 1)
