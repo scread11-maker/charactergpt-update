@@ -1,0 +1,99 @@
+name: Add blush expression guidance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/add-blush-expression-guidance.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add blush guidance and sync manifest
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+
+          p = Path('v061/ghost/master/config/interaction_rules.json')
+          data = p.read_bytes()
+          if hashlib.md5(data).hexdigest() != '804583d164f86c0bf73fd25dd94df414' or len(data) != 14923:
+              raise SystemExit('unexpected interaction_rules baseline')
+          text = data.decode('utf-8')
+          old = '''    {
+      "id": "wry_smile_expression",
+      "target": "*",
+      "gesture": "*",
+      "meaning": [
+        "wry_smile = restrained/wry smile; context may make it bitter, resigned, awkward, dryly amused, or gently teasing",
+        "smirk remains valid for a more knowingly teasing, sardonic, or self-assured reading; both may share the same visual surface"
+      ],
+      "notes": [
+        "Choose wry_smile or smirk from context; do not infer mockery or superiority from the visual surface alone.",
+        "embarrassed_wry_smile and embarrassed_smirk remain valid blush variants of the same visual family."
+      ]
+    },
+'''
+          new = '''    {
+      "id": "wry_smile_expression",
+      "target": "*",
+      "gesture": "*",
+      "meaning": [
+        "wry_smile = restrained/wry smile; context may make it bitter, resigned, awkward, dryly amused, or gently teasing",
+        "smirk remains valid for a more knowingly teasing, sardonic, or self-assured reading; both may share the same visual surface"
+      ],
+      "notes": [
+        "Choose wry_smile or smirk from context; do not infer mockery or superiority from the visual surface alone.",
+        "embarrassed_wry_smile and embarrassed_smirk remain valid in the same blush-capable visual family."
+      ]
+    },
+    {
+      "id": "blush_expression_modifier",
+      "target": "*",
+      "gesture": "*",
+      "meaning": [
+        "blush or blush_* = visibly flushed/red-faced; visible redness does not by itself mean embarrassment",
+        "Use blush for strong facial flushing from embarrassment, intense anger/annoyance, agitation, or other emotional heat; blush_angry is valid when anger is strong enough to redden the face"
+      ],
+      "notes": [
+        "embarrassed and embarrassed_* remain valid when embarrassment/shyness is the semantic state; blush emphasizes visible flushing. Both use the same blush-capable visual surfaces."
+      ]
+    },
+'''
+          if text.count(old) != 1:
+              raise SystemExit('expected wry rule not found exactly once')
+          text = text.replace(old, new, 1)
+          json.loads(text)
+          out = text.encode('utf-8')
+          md5 = hashlib.md5(out).hexdigest()
+          size = len(out)
+          if md5 != 'bb9a8235ab51550420fc715fb9a117e3' or size != 15566:
+              raise SystemExit(f'unexpected output md5={md5} size={size}')
+          p.write_bytes(out)
+
+          manifest = Path('v061/updates2.dau')
+          lines = manifest.read_text(encoding='utf-8').splitlines()
+          prefix = 'ghost/master/config/interaction_rules.json\x01'
+          hits = 0
+          for i, line in enumerate(lines):
+              if line.startswith(prefix):
+                  lines[i] = f'ghost/master/config/interaction_rules.json\x01{md5}\x01size={size}\x01'
+                  hits += 1
+          if hits != 1:
+              raise SystemExit(f'manifest entry hits={hits}')
+          manifest.write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
+          print(f'interaction_rules md5={md5} size={size}')
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add v061/ghost/master/config/interaction_rules.json v061/updates2.dau
+          git diff --cached --check
+          git commit -m 'Add blush expression semantics'
+          git push
