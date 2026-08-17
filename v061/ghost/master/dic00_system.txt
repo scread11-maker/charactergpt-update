@@ -189,10 +189,10 @@
 ＃ Normal success messages follow sspgpt dialogue duration; failures stay open.
 
 ＊OnUpdateBegin
-：\0\s[25]\![set,balloontimeout,0]sspgpt 正在更新……\e
+：\0\s[25]正在確認更新……
 
 ＊OnUpdateReady
-：
+：\0\s[25]確認到（Ｒ０）個更新檔案。\w5\n正在更新……
 
 ＊OnUpdateComplete
 ：\0\s[25]\![set,balloontimeout,（CharacterGPTBalloonTimeoutMs）]sspgpt 網路更新完成。\nSSP 結果：（Ｒ０）\n更新檔案：（Ｒ１）\e
