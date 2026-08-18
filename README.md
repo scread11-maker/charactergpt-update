@@ -2,22 +2,22 @@
 
 SSP network-update repository for sspgpt / 伺的なGPT.
 
-Current stable online-update channel: **v061/**
-Current stable baseline: **v0.6.0-alpha5-r6-test31aa**
-Current project/work-folder name: **sspgpt_proto_v06**
+Current stable online-update channel: **v062/**  
+Current v0.62 online-update baseline: **v0.62-alpha2c-u1**  
+Current project/work-folder name: **sspgpt_proto_v062**
 
-The retired `v05/` channel has been removed. Historical/architecture material remains under `v06/`.
+Older `v061/` remains available as the v0.6 compatibility channel. Historical/architecture material remains under `v06/`.
 
-## Stable update policy
+## v0.62 update policy
 
-The `v061/` channel distributes only the text/configuration/Satori/surface-definition layer required by SSP network update.
+The `v062/` channel is intentionally conservative. SSP network update is for safe Satori/text-layer maintenance and does **not** update executable/runtime-owned or user-owned state.
 
-The following remain excluded from ordinary network updates:
-- executable binaries
-- `ghost/master/bridge/*`
+Excluded from ordinary network updates:
+- executable binaries under `ghost/master/bridge/*`
+- `ghost/master/satori.dll`
+- `ghost/master/config/*` local editable settings/guides
 - `ghost/master/character/*`
 - `ghost/master/profile/*`
-- credentials/API keys
-- `ghost/master/satori.dll`
+- memory state and credentials/API keys
 
-Legacy binary/event names containing `CharacterGPT` are retained only where changing them would break runtime contracts. User-local character/profile state is never overwritten by this channel.
+Core Runtime / Bridge / MemoryService / TouchProgress upgrades continue to be distributed as NAR packages.
