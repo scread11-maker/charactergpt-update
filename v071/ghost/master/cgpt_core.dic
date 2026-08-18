@@ -1,4 +1,4 @@
-﻿// CharacterGPT v0.7.1 YAYA presentation / SSP adapter.
+﻿// CharacterGPT v0.7.1 GPU1 fix2 YAYA presentation / SSP adapter.
 // UTF-8 throughout. Runtime remains authoritative for NOW and affect.
 // YAYA owns presentation, direct SSP UI/input, and local timers only.
 
@@ -15,6 +15,8 @@ CGPT.Init
     CGPT.LinkedBusy = 0
     CGPT.LinkedReactionHold = 0
     CGPT.RecentReactionGuard = 0
+    CGPT.BalloonGuardActive = 0
+    CGPT.BalloonGuardGeneration = 0
     CGPT.AffectMode = 'neutral'
     CGPT.AffectPositive = 0.0
     CGPT.AffectShy = 0.0
@@ -41,8 +43,14 @@ CGPT.Init
 
 CGPT.HasBalloon
 {
-    // SSP Status exposes a visible balloon as balloon(scope=id/...).
-    // YAYA receives that header in the global status variable.
+    // Do not depend on a single asynchronous SSP Status sample. Foreground
+    // CharacterGPT dialogue explicitly holds a logical balloon guard from
+    // ReactionBegin until the actual/custom balloon close edge. Status remains
+    // a second source of truth for menus and other SSP-owned balloons.
+    if CGPT.BalloonGuardActive == 1 {
+        1
+        return
+    }
     if 'balloon(' _in_ status {
         1
         return
@@ -534,6 +542,8 @@ OnCharacterGPTBalloonTimeout
 {
     CGPT.BustClickLatched = 0
     CGPT.LinkedReactionHold = 0
+    CGPT.BalloonGuardActive = 0
+    CGPT.BalloonGuardGeneration += 1
     _restore = CGPT.ArmRestore
     "\0\b[-1]\1\b[-1]%(_restore)\e"
 }
@@ -541,12 +551,16 @@ OnBalloonClose
 {
     CGPT.BustClickLatched = 0
     CGPT.LinkedReactionHold = 0
+    CGPT.BalloonGuardActive = 0
+    CGPT.BalloonGuardGeneration += 1
     CGPT.ArmRestore
 }
 OnBalloonTimeout
 {
     CGPT.BustClickLatched = 0
     CGPT.LinkedReactionHold = 0
+    CGPT.BalloonGuardActive = 0
+    CGPT.BalloonGuardGeneration += 1
     CGPT.ArmRestore
 }
 
@@ -701,6 +715,11 @@ OnCharacterGPTActivity
 
 OnCharacterGPTReactionBegin
 {
+    // Explicit logical hold closes the race where an automatic restore event
+    // sees a Status header before SSP has reported balloon(...).  Automatic
+    // control scripts still use \C as the true first SakuraScript token.
+    CGPT.BalloonGuardGeneration += 1
+    CGPT.BalloonGuardActive = 1
     CGPT.LinkedReactionHold = 1
     CGPT.IdleActive = 0
     _cancel = CGPT.CancelRestore
