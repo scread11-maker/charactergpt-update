@@ -1,0 +1,144 @@
+name: Publish v071 GPU1 fix2
+
+"on":
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-v071-fix2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply fix2 YAYA and manifest
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          p=Path('v071/ghost/master/cgpt_core.dic')
+          s=p.read_text(encoding='utf-8-sig')
+          s=s.replace('// CharacterGPT v0.7.1 YAYA presentation / SSP adapter.','// CharacterGPT v0.7.1 GPU1 fix2 YAYA presentation / SSP adapter.',1)
+          s=s.replace('    CGPT.RecentReactionGuard = 0\n','    CGPT.RecentReactionGuard = 0\n    CGPT.BalloonGuardActive = 0\n    CGPT.BalloonGuardGeneration = 0\n',1)
+          old="""CGPT.HasBalloon
+          {
+              // SSP Status exposes a visible balloon as balloon(scope=id/...).
+              // YAYA receives that header in the global status variable.
+              if 'balloon(' _in_ status {
+                  1
+                  return
+              }
+              0
+          }
+          """
+          new="""CGPT.HasBalloon
+          {
+              // Do not depend on a single asynchronous SSP Status sample. Foreground
+              // CharacterGPT dialogue explicitly holds a logical balloon guard from
+              // ReactionBegin until the actual/custom balloon close edge. Status remains
+              // a second source of truth for menus and other SSP-owned balloons.
+              if CGPT.BalloonGuardActive == 1 {
+                  1
+                  return
+              }
+              if 'balloon(' _in_ status {
+                  1
+                  return
+              }
+              0
+          }
+          """
+          assert old in s
+          s=s.replace(old,new,1)
+          old="""OnCharacterGPTBalloonTimeout
+          {
+              CGPT.BustClickLatched = 0
+              CGPT.LinkedReactionHold = 0
+              _restore = CGPT.ArmRestore
+              "\\0\\b[-1]\\1\\b[-1]%(_restore)\\e"
+          }
+          OnBalloonClose
+          {
+              CGPT.BustClickLatched = 0
+              CGPT.LinkedReactionHold = 0
+              CGPT.ArmRestore
+          }
+          OnBalloonTimeout
+          {
+              CGPT.BustClickLatched = 0
+              CGPT.LinkedReactionHold = 0
+              CGPT.ArmRestore
+          }
+          """
+          new="""OnCharacterGPTBalloonTimeout
+          {
+              CGPT.BustClickLatched = 0
+              CGPT.LinkedReactionHold = 0
+              CGPT.BalloonGuardActive = 0
+              CGPT.BalloonGuardGeneration += 1
+              _restore = CGPT.ArmRestore
+              "\\0\\b[-1]\\1\\b[-1]%(_restore)\\e"
+          }
+          OnBalloonClose
+          {
+              CGPT.BustClickLatched = 0
+              CGPT.LinkedReactionHold = 0
+              CGPT.BalloonGuardActive = 0
+              CGPT.BalloonGuardGeneration += 1
+              CGPT.ArmRestore
+          }
+          OnBalloonTimeout
+          {
+              CGPT.BustClickLatched = 0
+              CGPT.LinkedReactionHold = 0
+              CGPT.BalloonGuardActive = 0
+              CGPT.BalloonGuardGeneration += 1
+              CGPT.ArmRestore
+          }
+          """
+          assert old in s
+          s=s.replace(old,new,1)
+          old="""OnCharacterGPTReactionBegin
+          {
+              CGPT.LinkedReactionHold = 1
+              CGPT.IdleActive = 0
+              _cancel = CGPT.CancelRestore
+              "\\C%(CGPT.ActivityScript)"
+          }
+          """
+          new="""OnCharacterGPTReactionBegin
+          {
+              // Explicit logical hold closes the race where an automatic restore event
+              // sees a Status header before SSP has reported balloon(...).  Automatic
+              // control scripts still use \\C as the true first SakuraScript token.
+              CGPT.BalloonGuardGeneration += 1
+              CGPT.BalloonGuardActive = 1
+              CGPT.LinkedReactionHold = 1
+              CGPT.IdleActive = 0
+              _cancel = CGPT.CancelRestore
+              "\\C%(CGPT.ActivityScript)"
+          }
+          """
+          assert old in s
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8-sig',newline='\n')
+          b=p.read_bytes(); md5=hashlib.md5(b).hexdigest(); size=len(b)
+          m=Path('v071/updates2.dau'); t=m.read_text(encoding='utf-8')
+          lines=t.splitlines(True)
+          assert lines and lines[0].startswith('ghost/master/cgpt_core.dic\x01')
+          ending='\n' if lines[0].endswith('\n') else ''
+          lines[0]=f'ghost/master/cgpt_core.dic\x01{md5}\x01size={size}\x01{ending}'
+          m.write_text(''.join(lines),encoding='utf-8',newline='\n')
+          print(md5,size)
+          PY
+          rm .github/workflows/publish-v071-fix2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add v071/ghost/master/cgpt_core.dic v071/updates2.dau .github/workflows/publish-v071-fix2.yml
+          git diff --cached --check
+          git commit -m 'Publish SSPGPT v071 GPU1 fix2 YAYA guard'
+          git push
