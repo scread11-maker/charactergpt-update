@@ -831,18 +831,19 @@ OnUpdateBegin
 }
 OnUpdateReady
 {
-    "\0\s[100]確認到%(reference[0])個更新檔案。\w5\n正在更新……"
+    _count = TOINT(reference[0]) + 1
+    "\0\s[100]確認到%(_count)個更新檔案。\w5\n正在更新……"
 }
 OnUpdateComplete
-{
-    "\0\s[25]\![set,balloontimeout,%(CGPT.BalloonTimeoutMs)]CharacterGPT 網路更新完成。\nSSP 結果：%(reference[0])\n更新檔案：%(reference[1])\e"
-}
-OnUpdateFailure
 {
     if reference[0] == 'none' {
         OnCharacterGPTUpdateNone
         return
     }
+    "\0\s[25]\![set,balloontimeout,%(CGPT.BalloonTimeoutMs)]CharacterGPT 網路更新完成。\nSSP 結果：%(reference[0])\n更新檔案：%(reference[1])\e"
+}
+OnUpdateFailure
+{
     "\0\s[3]\![set,balloontimeout,0]CharacterGPT 網路更新失敗。\n原因：%(reference[0])\n未完成檔案：%(reference[1])\e"
 }
 OnCharacterGPTUpdateNone
@@ -851,14 +852,14 @@ OnCharacterGPTUpdateNone
 }
 OnUpdateCheckComplete
 {
-    "\0\s[25]\![set,balloontimeout,%(CGPT.BalloonTimeoutMs)]CharacterGPT 更新檢查完成。\nSSP 結果：%(reference[0])\e"
-}
-OnUpdateCheckFailure
-{
     if reference[0] == 'none' {
         OnCharacterGPTUpdateNone
         return
     }
+    "\0\s[25]\![set,balloontimeout,%(CGPT.BalloonTimeoutMs)]CharacterGPT 更新檢查完成。\nSSP 結果：%(reference[0])\e"
+}
+OnUpdateCheckFailure
+{
     "\0\s[3]\![set,balloontimeout,0]CharacterGPT 更新檢查失敗。\n原因：%(reference[0])\e"
 }
 

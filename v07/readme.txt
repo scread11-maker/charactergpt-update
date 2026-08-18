@@ -1,5 +1,5 @@
 SSPGPT v0.7 online update channel
-Current presentation baseline: v0.7-alpha1-fix8
+Current presentation baseline: v0.7-alpha1-fix9 Online Update Baseline
 Published: 2026-08-19
 
 This SSP-native channel updates YAYA presentation/adapter text files only.
