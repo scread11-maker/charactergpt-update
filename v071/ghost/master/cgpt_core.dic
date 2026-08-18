@@ -856,7 +856,11 @@ OnClose
 {
     CGPT.IdleGeneration += 1
     CGPT.RestoreGeneration += 1
-    "\![execute,http-post,http://127.0.0.1:8782/shutdown,--nodescript,--nofile=UTF-8,--timeout=1]\![execute,http-post,http://127.0.0.1:8769/shutdown,--nodescript,--nofile=UTF-8,--timeout=1]\![send,websocket,ws://127.0.0.1:8766,SYSTEM|CLOSE]\![close,websocket,ws://127.0.0.1:8766]\0\s[5]再見。\-\e"
+    _plug = ""
+    if CGPT.ChatGPTLinkEnabled == 1 {
+        _plug = "\![execute,http-post,http://127.0.0.1:8782/shutdown,--nodescript,--nofile=UTF-8,--timeout=1]"
+    }
+    "%(_plug)\![send,websocket,ws://127.0.0.1:8766,SYSTEM|CLOSE]\_w[120]\![close,websocket,ws://127.0.0.1:8766]\0\s[5]再見。\-\e"
 }
 
 // Linked-chat presentation adapter. Runtime owns lifecycle and affect; YAYA only renders.
