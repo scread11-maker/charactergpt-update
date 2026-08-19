@@ -116,12 +116,12 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	a := &app{
-		root: root,
-		log: log.New(lf, "", log.LstdFlags|log.Lmicroseconds),
-		client: &http.Client{Timeout: 45 * time.Second},
-		state: "starting",
+		root:         root,
+		log:          log.New(lf, "", log.LstdFlags|log.Lmicroseconds),
+		client:       &http.Client{Timeout: 45 * time.Second},
+		state:        "starting",
 		lastActivity: time.Now(),
-		cancel: cancel,
+		cancel:       cancel,
 	}
 	go a.serveStatus(ctx)
 	a.log.Printf("CharacterGPTLink %s mode=embedded_secure_mcp_tunnel mcp_sdk=v1.7.0 tunnel_sdk=v0.0.11", version)
@@ -437,15 +437,15 @@ func (a *app) status(w http.ResponseWriter, _ *http.Request) {
 	last := a.lastActivity
 	a.mu.Unlock()
 	writeJSON(w, 200, map[string]any{
-		"ok": true,
-		"version": version,
-		"state": state,
-		"ready": state == "ready",
+		"ok":                true,
+		"version":           version,
+		"state":             state,
+		"ready":             state == "ready",
 		"tunnel_configured": configured,
-		"session_active": sessionActive,
-		"turn_active": turnActive,
-		"last_activity": last.UTC().Format(time.RFC3339),
-		"error": lastErr,
+		"session_active":    sessionActive,
+		"turn_active":       turnActive,
+		"last_activity":     last.UTC().Format(time.RFC3339),
+		"error":             lastErr,
 	})
 }
 

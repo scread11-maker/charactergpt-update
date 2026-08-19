@@ -88,4 +88,5 @@ func TestPublicErrorIsBounded(t *testing.T) {
 }
 
 type assertErr string
+
 func (e assertErr) Error() string { return string(e) }

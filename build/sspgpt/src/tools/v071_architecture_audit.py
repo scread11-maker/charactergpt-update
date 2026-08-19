@@ -24,7 +24,7 @@ checks['go1266_version_file']=(text('.go-version').strip()=='1.26.6')
 model=text('internal/model/model.go'); cfgmodel=text('internal/model/config.go')
 rt=text('cmd/runtime/main.go'); linked=text('cmd/runtime/v071_linked.go')
 br=text('cmd/bridge/main.go'); mem=text('cmd/memoryservice/main.go')
-ctx=text('cmd/contextservice/main.go'); core=text('yaya_adapter/ghost/master/cgpt_core.dic')
+link=text('cmd/link/main.go'); core=text('yaya_adapter/ghost/master/cgpt_core.dic')
 touch=text('cmd/touchprogress/main.go')
 
 # canonical ownership / request classes
@@ -107,12 +107,22 @@ checks['credentials_use_profile_secrets']='profilepath.CredentialsDAT' in cred a
 
 # linked lifecycle / MCP
 for name in ['activate_character_link','get_character_context','begin_character_reaction','request_bridge_reaction','update_character_thinking','begin_character_response','commit_linked_chat','abort_linked_chat','deactivate_character_link']:
-    checks['mcp_'+name]=name in ctx
+    checks['mcp_'+name]=name in link
 checks['linked_shared_episode']='EpisodeCommitV2' in linked and 'RequestLinkedChat' in linked and 'commitEpisode(ep)' in linked
 checks['linked_affect_canonicalized']='canonicalLinkedReactionEmotion' in linked
 checks['linked_secondary_bridge']='RequestPolicy.Secondary = true' in linked
 checks['linked_appearance_uses_current_shell_profile']='linkedProfileDocuments' in linked and '/v1/profile/context' in linked and 'state.Appearance' in linked and 'docs.Appearance' in linked
-checks['no_cot_tool_surface']='"chain_of_thought"' not in ctx.lower() and '"scratchpad"' not in ctx.lower()
+checks['no_cot_tool_surface']='chain-of-thought' in link.lower() and 'scratchpad' in link.lower() and '"chain_of_thought"' not in link.lower() and '"scratchpad"' not in link.lower()
+checks['mcp_unified_link_executable']=(ROOT/'cmd/link/main.go').exists() and not (ROOT/'cmd/contextservice').exists() and not (ROOT/'cmd/mcpadapter').exists() and not (ROOT/'cmd/tunnelsetup').exists()
+checks['mcp_official_go_sdk']='github.com/modelcontextprotocol/go-sdk/mcp' in link and 'github.com/modelcontextprotocol/go-sdk v1.7.0' in go_mod
+checks['mcp_embedded_secure_tunnel']='github.com/openai/tunnel-client' in link and 'github.com/openai/tunnel-client v0.0.11' in go_mod and 'mcp.NewInMemoryTransports()' in link
+checks['mcp_no_public_or_local_data_listener']='NewStreamableHTTPHandler' not in link and '/mcp' not in link and 'http.ListenAndServe' not in link
+checks['mcp_runtime_is_direct_authority']='http://127.0.0.1:8770' in link and '/linked/turn/commit' in link and '/linked/session/activate' in link
+checks['mcp_no_legacy_cloudflare']=all(x not in (link+core+text('scripts/build_windows_amd64.sh')).lower() for x in ['cloudflared','contextservice.exe','mc padapter.exe'.replace(' ',''),'tunnelsetup.exe'])
+checks['mcp_runtime_key_not_persisted']='runtime_api_key_env' in link and 'os.Getenv' in link and 'APIKey:              apiKey' in link and 'WriteFile' not in link
+checks['mcp_link_gui_only']='build_gui ./cmd/link "$out/Plug/CharacterGPTLink.exe"' in text('scripts/build_windows_amd64.sh') and 'CharacterGPTContextService.exe' not in text('scripts/build_windows_amd64.sh') and 'CharacterGPTMcpAdapter.exe' not in text('scripts/build_windows_amd64.sh') and 'CharacterGPTTunnelSetup.exe' not in text('scripts/build_windows_amd64.sh')
+checks['linked_abnormal_release']=all(x in linked for x in ['releaseLinkedPresentation','session_takeover:','abort_already_inactive','deactivate_already_inactive','timeout:']) and 'OnCharacterGPTLinkedRelease' in linked
+checks['linked_abort_deactivate_idempotent']='already_inactive' in linked and 'linked turn mismatch' in linked and 'invalid linked session' in linked
 
 # YAYA stable invariants
 checks['yaya_v071']='v0.7.1' in core
@@ -120,7 +130,7 @@ checks['yaya_fix6_balloon_guard']='CGPT.HasBalloon' in core and 'CGPT.ControlHea
 checks['yaya_fix7_owl_boot']='\\0\\s[-1]\\1\\s[10]' in core
 checks['yaya_link_menu']='ChatGPT連動' in core and 'OnEnableChatGPTConnection' in core
 m=re.search(r'CGPT\.BootScript\s*\{(.*?)\n\}',core,re.S); boot=m.group(1) if m else ''
-checks['plug_not_started_on_boot']='Plug' not in boot and 'ContextService' not in boot
+checks['plug_not_started_on_boot']='Plug' not in boot and 'CharacterGPTLink.exe' not in boot
 checks['online_update_v07']='https://raw.githubusercontent.com/scread11-maker/charactergpt-update/main/v07/' in text('yaya_adapter/ghost/master/descript.txt')
 checks['install_directory_sspgpt_proto_v07']='directory,sspgpt_proto_v07' in text('yaya_adapter/install.txt')
 checks['fix9_update_semantics']='TOINT(reference[0]) + 1' in core and "if reference[0] == 'none'" in core
@@ -220,7 +230,7 @@ checks['no_surface_ids_in_bridge_semantics']='Surfaces' not in emb and 'surface1
 checks['runtime_http_shutdown_coordinator']='mux.HandleFunc("/shutdown"' in rt and 'beginShutdown("http")' in rt and 'shutdownServices' in rt
 checks['runtime_shutdown_memory_last']='{"MemoryService", "http://127.0.0.1:8768/shutdown"' in rt and rt.index('http://127.0.0.1:8768/shutdown') > rt.index('http://127.0.0.1:8767/shutdown')
 checks['yaya_close_uses_runtime_http']='http://127.0.0.1:8770/shutdown' in core and 'SYSTEM|CLOSE' in core
-checks['shutdown_idempotent']=all('shutdownOnce' in x for x in [rt,br,mem,touch,ctx])
+checks['shutdown_idempotent']=all('shutdownOnce' in x for x in [rt,br,mem,touch])
 checks['bridge_shutdown_cancels_inflight']='SHUTDOWN_BEGIN inflight=' in br and 'cancel()' in br
 checks['touch_shutdown_persists']='SHUTDOWN_BEGIN persisted=true' in touch and 'persistLocked()' in touch
 checks['memory_shutdown_requeues_unprocessed']='requeueUnprocessed' in mem and 'retry_on_next_start' in mem
@@ -233,7 +243,7 @@ warnings['cuda_main_runner_sha_unpinned']=len(main_cuda.get('sha256',''))!=64
 warnings['cpu_main_runner_sha_unpinned']=len(lm.get('runner',{}).get('archive_sha256',''))!=64
 
 report={
- 'version':'0.7.1-fix14b-go1266',
+ 'version':'0.7.1-fix15-mcp',
  'source_root':str(ROOT),
  'checks':checks,
  'passed':all(checks.values()),
