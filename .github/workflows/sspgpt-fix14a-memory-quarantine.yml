@@ -1,0 +1,119 @@
+name: SSPGPT fix14a Memory Quarantine Validate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "build/sspgpt/fix14a_memory_quarantine.patch"
+      - ".github/workflows/sspgpt-fix14a-memory-quarantine.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sspgpt-fix14a-memory-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-build-promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: '1.26.5'
+          cache: false
+
+      - name: Verify and apply fix14a patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "4916c2b65cc0ef99f3c4cede680d38c08b8ea1bd93de862dc988cbfa64305730  build/sspgpt/fix14a_memory_quarantine.patch" | sha256sum -c -
+          git apply --check build/sspgpt/fix14a_memory_quarantine.patch
+          git apply build/sspgpt/fix14a_memory_quarantine.patch
+          git diff --check
+
+      - name: Verify Go 1.26.5 contract
+        working-directory: build/sspgpt/src
+        env:
+          GOTOOLCHAIN: local
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat .go-version)" = "1.26.5"
+          grep -Fx "go 1.26.0" go.mod
+          grep -Fx "toolchain go1.26.5" go.mod
+          test "$(go env GOVERSION)" = "go1.26.5"
+          go version
+
+      - name: Unit tests and vet
+        working-directory: build/sspgpt/src
+        env:
+          GOTOOLCHAIN: local
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test ./...
+          go vet ./...
+
+      - name: Architecture and YAYA audits
+        working-directory: build/sspgpt/src
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/v071_architecture_audit.py
+          python3 tools/yaya_static_audit.py
+
+      - name: Build Windows amd64 and 386
+        working-directory: build/sspgpt/src
+        env:
+          GOTOOLCHAIN: local
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/build_windows_amd64.sh
+          bash scripts/build_windows_386.sh
+          mkdir -p artifact/fix14a-amd64 artifact/fix14a-386
+          cp -a dist/windows_amd64/. artifact/fix14a-amd64/
+          cp -a dist/windows386/. artifact/fix14a-386/
+          (cd artifact/fix14a-amd64 && find . -type f -name '*.exe' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
+          (cd artifact/fix14a-386 && find . -type f -name '*.exe' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
+          go version > artifact/fix14a-amd64/GO_VERSION.txt
+          go version > artifact/fix14a-386/GO_VERSION.txt
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: SSPGPT-v07-fix14a-memory-quarantine-windows-amd64
+          path: build/sspgpt/src/artifact/fix14a-amd64
+          if-no-files-found: error
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: SSPGPT-v07-fix14a-memory-quarantine-windows-386
+          path: build/sspgpt/src/artifact/fix14a-386
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Promote validated readable source branch
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/fix14a-promote
+          mkdir -p /tmp/fix14a-promote/cmd/memoryservice /tmp/fix14a-promote/tools
+          cp build/sspgpt/src/cmd/memoryservice/main.go /tmp/fix14a-promote/cmd/memoryservice/main.go
+          cp build/sspgpt/src/cmd/memoryservice/main_test.go /tmp/fix14a-promote/cmd/memoryservice/main_test.go
+          cp build/sspgpt/src/tools/v071_architecture_audit.py /tmp/fix14a-promote/tools/v071_architecture_audit.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git reset --hard HEAD
+          git fetch origin main
+          git switch --force-create promotion/fix14a-memory-quarantine origin/main
+          cp /tmp/fix14a-promote/cmd/memoryservice/main.go build/sspgpt/src/cmd/memoryservice/main.go
+          cp /tmp/fix14a-promote/cmd/memoryservice/main_test.go build/sspgpt/src/cmd/memoryservice/main_test.go
+          cp /tmp/fix14a-promote/tools/v071_architecture_audit.py build/sspgpt/src/tools/v071_architecture_audit.py
+          git add build/sspgpt/src/cmd/memoryservice/main.go build/sspgpt/src/cmd/memoryservice/main_test.go build/sspgpt/src/tools/v071_architecture_audit.py
+          git commit -m "Quarantine deterministic Memory Brain poison episodes"
+          git push --force origin HEAD:refs/heads/promotion/fix14a-memory-quarantine
