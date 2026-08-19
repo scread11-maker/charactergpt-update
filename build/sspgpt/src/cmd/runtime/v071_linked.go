@@ -87,6 +87,12 @@ func opaqueLinkID() string {
 	return fmt.Sprintf("link-%d", time.Now().UnixNano())
 }
 
+func (a *app) releaseLinkedPresentation(reason string) {
+	a.log.Printf("LINK_PRESENTATION_RELEASE reason=%s", reason)
+	a.auditCognitionf("LINK_PRESENTATION_RELEASE reason=%s", reason)
+	a.sendPresentation("\\![raise,OnCharacterGPTLinkedRelease]\\e")
+}
+
 func (a *app) expireLinkedLocked(now time.Time) string {
 	if a.linked == nil {
 		return ""
@@ -112,6 +118,7 @@ func (a *app) linkedBusy() bool {
 	a.mu.Unlock()
 	if expired != "" {
 		a.log.Printf("LINK_TIMEOUT %s", expired)
+		a.releaseLinkedPresentation("timeout:" + expired)
 	}
 	return busy
 }
@@ -119,6 +126,7 @@ func (a *app) linkedBusy() bool {
 func (a *app) validateLinkedLocked(sessionID string, turnRequired bool, turnID string) error {
 	expired := a.expireLinkedLocked(time.Now())
 	if expired != "" {
+		go a.releaseLinkedPresentation("timeout:" + expired)
 		return fmt.Errorf("linked lease expired: %s", expired)
 	}
 	if a.linked == nil || sessionID == "" || a.linked.SessionID != sessionID {
@@ -190,8 +198,16 @@ func (a *app) linkActivate(w http.ResponseWriter, r *http.Request) {
 	}
 	sid := opaqueLinkID()
 	a.mu.Lock()
+	hadActiveTurn := a.linked != nil && a.linked.Turn != nil
+	oldSession := ""
+	if a.linked != nil {
+		oldSession = a.linked.SessionID
+	}
 	a.linked = &linkedSession{SessionID: sid, Activated: time.Now(), LastSeen: time.Now()}
 	a.mu.Unlock()
+	if hadActiveTurn {
+		a.releaseLinkedPresentation("session_takeover:" + oldSession)
+	}
 	appearanceState := a.appearance()
 	docs := a.linkedProfileDocuments(appearanceState)
 	a.log.Printf("LINK_SESSION_ACTIVATE session=%s shell=%q shell_key=%s profile_ready=%t", sid, appearanceState.ShellName, docs.ShellKey, docs.Ready)
@@ -536,14 +552,40 @@ func (a *app) linkAbort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.mu.Lock()
-	if err := a.validateLinkedLocked(in.SessionID, true, in.ExternalTurnID); err != nil {
+	expired := a.expireLinkedLocked(time.Now())
+	if expired != "" {
 		a.mu.Unlock()
-		httpjson.Write(w, 409, map[string]string{"error": err.Error()})
+		a.releaseLinkedPresentation("timeout:" + expired)
+		httpjson.Write(w, 200, map[string]any{"ok": true, "phase": "aborted", "already_inactive": true})
+		return
+	}
+	if a.linked == nil {
+		a.mu.Unlock()
+		a.releaseLinkedPresentation("abort_already_inactive")
+		httpjson.Write(w, 200, map[string]any{"ok": true, "phase": "aborted", "already_inactive": true})
+		return
+	}
+	if in.SessionID == "" || a.linked.SessionID != in.SessionID {
+		a.mu.Unlock()
+		httpjson.Write(w, 409, map[string]string{"error": "invalid linked session"})
+		return
+	}
+	if a.linked.Turn == nil {
+		a.linked.LastSeen = time.Now()
+		a.mu.Unlock()
+		a.releaseLinkedPresentation("abort_no_active_turn")
+		httpjson.Write(w, 200, map[string]any{"ok": true, "phase": "aborted", "already_inactive": true})
+		return
+	}
+	if in.ExternalTurnID != "" && a.linked.Turn.ExternalTurnID != in.ExternalTurnID {
+		a.mu.Unlock()
+		httpjson.Write(w, 409, map[string]string{"error": "linked turn mismatch"})
 		return
 	}
 	a.linked.Turn = nil
 	a.linked.LastSeen = time.Now()
 	a.mu.Unlock()
+	a.releaseLinkedPresentation("abort")
 	a.auditCognitionf("LINK_TURN_ABORT session=%s turn=%s reason=%q", in.SessionID, in.ExternalTurnID, in.Reason)
 	httpjson.Write(w, 200, map[string]any{"ok": true, "phase": "aborted"})
 }
@@ -560,7 +602,20 @@ func (a *app) linkDeactivate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.mu.Lock()
-	if a.linked == nil || (in.SessionID != "" && a.linked.SessionID != in.SessionID) {
+	expired := a.expireLinkedLocked(time.Now())
+	if expired != "" {
+		a.mu.Unlock()
+		a.releaseLinkedPresentation("timeout:" + expired)
+		httpjson.Write(w, 200, map[string]any{"ok": true, "state": "available", "already_inactive": true})
+		return
+	}
+	if a.linked == nil {
+		a.mu.Unlock()
+		a.releaseLinkedPresentation("deactivate_already_inactive")
+		httpjson.Write(w, 200, map[string]any{"ok": true, "state": "available", "already_inactive": true})
+		return
+	}
+	if in.SessionID != "" && a.linked.SessionID != in.SessionID {
 		a.mu.Unlock()
 		httpjson.Write(w, 409, map[string]string{"error": "invalid linked session"})
 		return
@@ -568,6 +623,7 @@ func (a *app) linkDeactivate(w http.ResponseWriter, r *http.Request) {
 	old := a.linked.SessionID
 	a.linked = nil
 	a.mu.Unlock()
+	a.releaseLinkedPresentation("deactivate")
 	a.auditCognitionf("LINK_SESSION_DEACTIVATE session=%s", old)
 	httpjson.Write(w, 200, map[string]any{"ok": true, "state": "available"})
 }
@@ -591,6 +647,7 @@ func (a *app) linkStatus(w http.ResponseWriter, r *http.Request) {
 	a.mu.Unlock()
 	if expired != "" {
 		a.log.Printf("LINK_TIMEOUT %s", expired)
+		a.releaseLinkedPresentation("timeout:" + expired)
 	}
 	httpjson.Write(w, 200, map[string]any{"ok": true, "state": state, "session_id": sid, "phase": phase, "external_turn_id": turn})
 }

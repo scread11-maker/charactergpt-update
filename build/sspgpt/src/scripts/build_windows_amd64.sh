@@ -10,7 +10,7 @@ build_gui ./cmd/bridge "$out/core/CharacterGPTBridge.exe"
 build_gui ./cmd/memoryservice "$out/core/CharacterGPTMemoryService.exe"
 build_gui ./cmd/runtime "$out/core/CharacterGPTRuntime.exe"
 build_gui ./cmd/touchprogress "$out/core/CharacterGPTTouchProgress.exe"
-build_gui ./cmd/contextservice "$out/Plug/CharacterGPTContextService.exe"
-go build -trimpath -ldflags='-s -w' -o "$out/Plug/CharacterGPTMcpAdapter.exe" ./cmd/mcpadapter
-build_gui ./cmd/tunnelsetup "$out/Plug/CharacterGPTTunnelSetup.exe"
-python scripts/verify_windows_gui.py "$out/core/CharacterGPTRuntime.exe"
+build_gui ./cmd/link "$out/Plug/CharacterGPTLink.exe"
+python scripts/verify_windows_gui.py \
+  "$out/core/CharacterGPTRuntime.exe" \
+  "$out/Plug/CharacterGPTLink.exe"

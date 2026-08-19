@@ -495,30 +495,30 @@ OnCharacterGPTLinkMenu
 OnEnableChatGPTConnection
 {
     CGPT.ChatGPTLinkEnabled = 1
-    "\![open,file,Plug/CharacterGPTContextService.exe]\0\s[25]\![set,balloontimeout,2400]ChatGPT連動已啟動。\n正在等待 Web ChatGPT 連線。\e"
+    "\![open,file,Plug/CharacterGPTLink.exe]\0\s[25]\![set,balloontimeout,2400]ChatGPT連動已啟動。\n正在等待 Web ChatGPT 連線。\e"
 }
 
 OnDisableChatGPTConnection
 {
     CGPT.ChatGPTLinkEnabled = 0
     CGPT.LinkedBusy = 0
-    "\![execute,http-post,http://127.0.0.1:8782/shutdown,--nodescript,--nofile=UTF-8,--timeout=1]\0\s[25]\![set,balloontimeout,2200]ChatGPT連動已關閉。\e"
+    "\![execute,http-post,http://127.0.0.1:8781/shutdown,--nodescript,--nofile=UTF-8,--timeout=1]\0\s[25]\![set,balloontimeout,2200]ChatGPT連動已關閉。\e"
 }
 
 OnReconnectChatGPTConnection
 {
     CGPT.ChatGPTLinkEnabled = 1
-    "\![execute,http-post,http://127.0.0.1:8782/shutdown,--nodescript,--nofile=UTF-8,--timeout=1]\![timerraise,900,1,OnStartChatGPTConnection]\0\s[20]正在重新啟動 ChatGPT連動……\e"
+    "\![execute,http-post,http://127.0.0.1:8781/shutdown,--nodescript,--nofile=UTF-8,--timeout=1]\![timerraise,900,1,OnStartChatGPTConnection]\0\s[20]正在重新啟動 ChatGPT連動……\e"
 }
 
 OnStartChatGPTConnection
 {
-    "\![open,file,Plug/CharacterGPTContextService.exe]"
+    "\![open,file,Plug/CharacterGPTLink.exe]"
 }
 
 OnConfigureChatGPTConnection
 {
-    "\![open,file,Plug/CharacterGPTTunnelSetup.exe]\0\s[20]已開啟 ChatGPT連線設定。\n完成後重新啟動連動即可套用。\e"
+    "\![open,file,Plug/README.txt]\![open,file,Plug/link_config.json]\0\s[20]已開啟 Secure MCP Tunnel 設定說明與連線設定。\n完成後重新啟動連動即可套用。\e"
 }
 
 OnBacklogMirrorMenu
