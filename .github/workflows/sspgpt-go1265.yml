@@ -37,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(cat .go-version)" = "1.26.6"
-          grep -Fx "go 1.26.0" go.mod
+          grep -Fx "go 1.26.2" go.mod
           grep -Fx "toolchain go1.26.6" go.mod
           go version
           test "$(go env GOVERSION)" = "go1.26.6"
@@ -94,7 +94,7 @@ jobs:
           printf '%s\n' "${GITHUB_SHA}" > artifact/output/GIT_COMMIT.txt
       - uses: actions/upload-artifact@v7.0.1
         with:
-          name: SSPGPT-v07-fix14b-go1266-windows-${{ matrix.arch }}
+          name: SSPGPT-v07-fix15-mcp-go1266-windows-${{ matrix.arch }}
           path: build/sspgpt/src/artifact/output
           if-no-files-found: error
           retention-days: 30
