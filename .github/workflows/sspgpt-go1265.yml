@@ -6,6 +6,11 @@ on:
     paths:
       - "build/sspgpt/**"
       - ".github/workflows/sspgpt-go1265.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "build/sspgpt/**"
+      - ".github/workflows/sspgpt-go1265.yml"
   workflow_dispatch:
 
 permissions:
