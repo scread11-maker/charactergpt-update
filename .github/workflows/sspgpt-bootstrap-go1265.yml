@@ -31,7 +31,18 @@ jobs:
           set -euo pipefail
           rm -rf /tmp/sspgpt-fix14
           mkdir -p /tmp/sspgpt-fix14/src
-          cat build/sspgpt/source.parts/part-* | base64 --decode --ignore-garbage > /tmp/sspgpt-fix14/source.tar.xz
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('build/sspgpt/source.parts/part-006')
+          s = p.read_text(encoding='utf-8')
+          bad = 'QbitosMXrM4RZ'
+          good = 'QDtosMXrM4RZ'
+          if s.count(bad) != 1:
+              raise SystemExit(f'unexpected part-006 corruption count: {s.count(bad)}')
+          p.write_text(s.replace(bad, good), encoding='utf-8')
+          PY
+          echo "91b91244ea22a1f47ef913c4f353310e8b6289d2da730ff43d5375c88b3063e2  build/sspgpt/source.parts/part-006" | sha256sum -c -
+          cat build/sspgpt/source.parts/part-* | base64 --decode > /tmp/sspgpt-fix14/source.tar.xz
           echo "4deea8ced8a2bb9b308d4bc6273a4f727eda793d0b514f57f642e7d500e9c6ac  /tmp/sspgpt-fix14/source.tar.xz" | sha256sum -c -
           tar -xJf /tmp/sspgpt-fix14/source.tar.xz -C /tmp/sspgpt-fix14/src
           test -f /tmp/sspgpt-fix14/src/go.mod
