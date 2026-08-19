@@ -1,5 +1,0 @@
-// CharacterGPT v0.7 YAYA system configuration.
-dic, yaya_config.txt, UTF-8
-dic, system/yaya_shiori3.dic, UTF-8
-dic, system/yaya_optional.dic, UTF-8
-ignoreiolog, ID: OnSecondChange

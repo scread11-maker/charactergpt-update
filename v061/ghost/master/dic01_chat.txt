@@ -1,5 +1,0 @@
-＃ User chat text is handled by Runtime; Satori does not transport it.
-
-＊OnCommunicate
-＞OnCharacterGPTLinkedBusyNotice	（CharacterGPTLinkedBusy）==1
-：\0\s[3]中文對話由 sspgpt Runtime 處理。\n請左鍵點非觸摸區域開啟對話窗。\e
