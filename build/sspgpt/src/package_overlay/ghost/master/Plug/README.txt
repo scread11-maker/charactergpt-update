@@ -16,7 +16,7 @@ Setup
 -----
 1. Create/provision a Secure MCP Tunnel in OpenAI and note its tunnel id.
 2. Put only the tunnel id in Plug/link_config.json, or set CONTROL_PLANE_TUNNEL_ID in the environment.
-3. Provide a runtime tunnel key through the environment variable named by runtime_api_key_env (default: CONTROL_PLANE_API_KEY). The runtime key should have only the tunnel permissions needed to read/use the configured tunnel. Do not paste an API key into link_config.json.
+3. Provide a runtime tunnel key through the environment variable named by runtime_api_key_env (default: CONTROL_PLANE_API_KEY). The runtime key should have only the tunnel permissions needed to read/use the configured tunnel. Do not paste an API key into link_config.json; the file is intentionally non-secret configuration.
 4. In SSPGPT, open CharacterGPT > ChatGPT連動 > 開啟連動. CharacterGPTLink.exe starts only when explicitly enabled; it is not launched during Ghost boot.
 5. Configure the corresponding MCP connection/app in ChatGPT to use the Secure MCP Tunnel.
 
