@@ -19,8 +19,8 @@ checks={}
 # fix14 build/toolchain baseline
 go_mod=text('go.mod')
 checks['go126_module_floor']=('go 1.26.0' in go_mod)
-checks['go1265_preferred_toolchain']=('toolchain go1.26.5' in go_mod)
-checks['go1265_version_file']=(text('.go-version').strip()=='1.26.5')
+checks['go1266_preferred_toolchain']=('toolchain go1.26.6' in go_mod)
+checks['go1266_version_file']=(text('.go-version').strip()=='1.26.6')
 model=text('internal/model/model.go'); cfgmodel=text('internal/model/config.go')
 rt=text('cmd/runtime/main.go'); linked=text('cmd/runtime/v071_linked.go')
 br=text('cmd/bridge/main.go'); mem=text('cmd/memoryservice/main.go')
@@ -233,7 +233,7 @@ warnings['cuda_main_runner_sha_unpinned']=len(main_cuda.get('sha256',''))!=64
 warnings['cpu_main_runner_sha_unpinned']=len(lm.get('runner',{}).get('archive_sha256',''))!=64
 
 report={
- 'version':'0.7.1-fix14-go1265',
+ 'version':'0.7.1-fix14b-go1266',
  'source_root':str(ROOT),
  'checks':checks,
  'passed':all(checks.values()),
