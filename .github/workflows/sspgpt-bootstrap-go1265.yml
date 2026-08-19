@@ -122,6 +122,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git restore --source=HEAD -- build/sspgpt/source.parts/part-006
           git fetch origin main
           git switch --force-create promotion/fix14-go1265-readable origin/main
           rm -rf build/sspgpt/src build/sspgpt/source.parts
