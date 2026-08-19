@@ -1,94 +1,46 @@
-name: SSPGPT Go 1.26.5 Source Bootstrap
+name: SSPGPT Go 1.26.5 Bootstrap Validate
 
 on:
-  push:
+  pull_request:
     branches: [main]
     paths:
+      - "build/sspgpt/source.parts/**"
       - ".github/workflows/sspgpt-bootstrap-go1265.yml"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: sspgpt-go1265-bootstrap
+  group: sspgpt-go1265-bootstrap-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  bootstrap:
-    if: github.actor != 'github-actions[bot]'
+  validate-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
       - uses: actions/setup-go@v7.0.0
         with:
           go-version: '1.26.5'
           cache: false
-      - name: Recover build source from bootstrap object
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BOOTSTRAP_TREE: f422d21a389471f7de47ac35bed58835bdec70cb
+
+      - name: Reconstruct and verify source archive
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf /tmp/sspgpt-bootstrap
-          mkdir -p /tmp/sspgpt-bootstrap/parts /tmp/sspgpt-bootstrap/src
-          python3 - <<'PY'
-          import base64
-          import json
-          import os
-          import urllib.request
-          from pathlib import Path
+          rm -rf /tmp/sspgpt-fix14
+          mkdir -p /tmp/sspgpt-fix14/src
+          cat build/sspgpt/source.parts/part-* | base64 -d > /tmp/sspgpt-fix14/source.tar.xz
+          echo "4deea8ced8a2bb9b308d4bc6273a4f727eda793d0b514f57f642e7d500e9c6ac  /tmp/sspgpt-fix14/source.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/sspgpt-fix14/source.tar.xz -C /tmp/sspgpt-fix14/src
+          test -f /tmp/sspgpt-fix14/src/go.mod
+          test -f /tmp/sspgpt-fix14/src/.go-version
+          test -d /tmp/sspgpt-fix14/src/cmd
+          test -d /tmp/sspgpt-fix14/src/internal
 
-          repo = os.environ['GITHUB_REPOSITORY']
-          token = os.environ['GH_TOKEN']
-          tree = os.environ['BOOTSTRAP_TREE']
-          api = f'https://api.github.com/repos/{repo}'
-          headers = {
-              'Authorization': f'Bearer {token}',
-              'Accept': 'application/vnd.github+json',
-              'X-GitHub-Api-Version': '2022-11-28',
-              'User-Agent': 'sspgpt-go1265-bootstrap',
-          }
-
-          def get_json(url):
-              req = urllib.request.Request(url, headers=headers)
-              with urllib.request.urlopen(req) as r:
-                  return json.load(r)
-
-          data = get_json(f'{api}/git/trees/{tree}?recursive=1')
-          entries = [
-              e for e in data.get('tree', [])
-              if e.get('type') == 'blob' and e.get('path', '').startswith('build/sspgpt/source.parts/part-')
-          ]
-          if len(entries) < 12:
-              raise SystemExit(f'bootstrap tree incomplete: expected >=12 parts, found {len(entries)}')
-          out = Path('/tmp/sspgpt-bootstrap/parts')
-          for e in sorted(entries, key=lambda x: x['path']):
-              blob = get_json(f"{api}/git/blobs/{e['sha']}")
-              if blob.get('encoding') != 'base64':
-                  raise SystemExit(f"unexpected blob encoding for {e['path']}")
-              payload = base64.b64decode(blob['content'])
-              (out / Path(e['path']).name).write_bytes(payload)
-          PY
-          cat /tmp/sspgpt-bootstrap/parts/part-* | base64 -d > /tmp/sspgpt-bootstrap/source.truncated.xz
-          xz -dc /tmp/sspgpt-bootstrap/source.truncated.xz > /tmp/sspgpt-bootstrap/source.tar 2>/dev/null || true
-          tar -xf /tmp/sspgpt-bootstrap/source.tar -C /tmp/sspgpt-bootstrap/src --ignore-zeros 2>/dev/null || true
-          test -f /tmp/sspgpt-bootstrap/src/go.mod
-          test -f /tmp/sspgpt-bootstrap/src/.go-version
-          test -d /tmp/sspgpt-bootstrap/src/cmd
-          test -d /tmp/sspgpt-bootstrap/src/internal
-          test -f /tmp/sspgpt-bootstrap/src/scripts/build_windows_amd64.sh
-          test -f /tmp/sspgpt-bootstrap/src/scripts/build_windows_386.sh
-          test -f /tmp/sspgpt-bootstrap/src/tools/v071_architecture_audit.py
-          test -f /tmp/sspgpt-bootstrap/src/tools/yaya_static_audit.py
-          rm -rf build/sspgpt/src
-          mkdir -p build/sspgpt/src
-          cp -a /tmp/sspgpt-bootstrap/src/. build/sspgpt/src/
       - name: Verify exact Go 1.26.5 contract
-        working-directory: build/sspgpt/src
+        working-directory: /tmp/sspgpt-fix14/src
         env:
           GOTOOLCHAIN: local
         shell: bash
@@ -97,13 +49,29 @@ jobs:
           test "$(cat .go-version)" = "1.26.5"
           grep -Fx "go 1.26.0" go.mod
           grep -Fx "toolchain go1.26.5" go.mod
+          go version
           test "$(go env GOVERSION)" = "go1.26.5"
+
+      - name: Unit tests and vet
+        working-directory: /tmp/sspgpt-fix14/src
+        env:
+          GOTOOLCHAIN: local
+        shell: bash
+        run: |
+          set -euo pipefail
           go test ./...
           go vet ./...
+
+      - name: Architecture and YAYA audits
+        working-directory: /tmp/sspgpt-fix14/src
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 tools/v071_architecture_audit.py
           python3 tools/yaya_static_audit.py
-      - name: Verify Windows cross-builds
-        working-directory: build/sspgpt/src
+
+      - name: Build Windows amd64 and 386
+        working-directory: /tmp/sspgpt-fix14/src
         env:
           GOTOOLCHAIN: local
         shell: bash
@@ -111,14 +79,24 @@ jobs:
           set -euo pipefail
           bash scripts/build_windows_amd64.sh
           bash scripts/build_windows_386.sh
-      - name: Commit readable build source and remove bootstrap
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf build/sspgpt/src/dist build/sspgpt/src/artifact
-          git rm .github/workflows/sspgpt-bootstrap-go1265.yml
-          git add build/sspgpt/src
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Expand SSPGPT fix14 Go 1.26.5 build source'
-          git push origin HEAD:main
+          mkdir -p artifact/amd64 artifact/386
+          cp -a dist/windows_amd64/. artifact/amd64/
+          cp -a dist/windows386/. artifact/386/
+          (cd artifact/amd64 && find . -type f -name '*.exe' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
+          (cd artifact/386 && find . -type f -name '*.exe' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
+          go version > artifact/GO_VERSION.txt
+          printf '%s\n' "${GITHUB_SHA}" > artifact/GIT_COMMIT.txt
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: SSPGPT-v07-fix14-go1265-windows-amd64
+          path: /tmp/sspgpt-fix14/src/artifact/amd64
+          if-no-files-found: error
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: SSPGPT-v07-fix14-go1265-windows-386
+          path: /tmp/sspgpt-fix14/src/artifact/386
+          if-no-files-found: error
+          retention-days: 30
