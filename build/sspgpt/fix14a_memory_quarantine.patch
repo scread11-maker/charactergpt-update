@@ -1,0 +1,181 @@
+--- a/build/sspgpt/src/cmd/memoryservice/main.go
++++ b/build/sspgpt/src/cmd/memoryservice/main.go
+@@ -74,6 +74,7 @@
+ 	EpisodeID   string `json:"episode_id"`
+ 	ProcessedAt string `json:"processed_at"`
+ 	Status      string `json:"status"`
++	Error       string `json:"error,omitempty"`
+ }
+ 
+ func applyProcessedStatus(processed map[string]bool, x processedRecord) {
+@@ -81,13 +82,36 @@
+ 		return
+ 	}
+ 	switch x.Status {
+-	case "ok", "skipped_pre_epoch":
++	case "ok", "skipped_pre_epoch", "quarantined_invalid_output":
+ 		processed[x.EpisodeID] = true
+ 	case "revalidate_fix8", "invalid_schema", "retry":
+ 		delete(processed, x.EpisodeID)
+ 	}
+ }
+ 
++type terminalMemoryBrainOutputError struct {
++	err error
++}
++
++func (e *terminalMemoryBrainOutputError) Error() string {
++	if e == nil || e.err == nil {
++		return "memory brain returned persistently invalid structured output"
++	}
++	return e.err.Error()
++}
++
++func (e *terminalMemoryBrainOutputError) Unwrap() error {
++	if e == nil {
++		return nil
++	}
++	return e.err
++}
++
++func isTerminalMemoryBrainOutputError(err error) bool {
++	var target *terminalMemoryBrainOutputError
++	return errors.As(err, &target)
++}
++
+ type rawRecent struct {
+ 	EpisodeID string `json:"episode_id,omitempty"`
+ 	RequestID string `json:"request_id,omitempty"`
+@@ -688,6 +712,13 @@
+ 					s.log.Printf("MEMORY_BRAIN_PAUSED episode=%s reason=shutdown", ep.EpisodeID)
+ 					return
+ 				}
++				if isTerminalMemoryBrainOutputError(err) {
++					if qerr := s.quarantineInvalidOutput(ep, err); qerr == nil {
++						continue
++					} else {
++						s.log.Printf("MEMORY_BRAIN_QUARANTINE_PERSIST_ERROR episode=%s error=%v", ep.EpisodeID, qerr)
++					}
++				}
+ 				s.log.Printf("MEMORY_BRAIN_DEFER episode=%s error=%v", ep.EpisodeID, err)
+ 				s.audit.Printf("MEMORY_BRAIN_DEGRADED episode=%s error=%q", ep.EpisodeID, err.Error())
+ 				go func(e model.EpisodeCommitV2) {
+@@ -705,6 +736,20 @@
+ 		}
+ 	}
+ }
++
++func (s *service) quarantineInvalidOutput(ep model.EpisodeCommitV2, cause error) error {
++	rec := processedRecord{EpisodeID: ep.EpisodeID, ProcessedAt: model.Now(), Status: "quarantined_invalid_output", Error: errString(cause)}
++	if err := appendJSON(filepath.Join(s.root, "memory", "processed_v2.jsonl"), rec); err != nil {
++		return err
++	}
++	s.mu.Lock()
++	s.processed[ep.EpisodeID] = true
++	s.mu.Unlock()
++	s.log.Printf("MEMORY_BRAIN_QUARANTINED episode=%s reason=invalid_output", ep.EpisodeID)
++	s.audit.Printf("MEMORY_BRAIN_QUARANTINED episode=%s status=quarantined_invalid_output error=%q", ep.EpisodeID, errString(cause))
++	return nil
++}
++
+ func (s *service) isProcessed(id string) bool {
+ 	s.mu.RLock()
+ 	defer s.mu.RUnlock()
+@@ -869,6 +914,7 @@
+ 	b, _ := json.Marshal(compactMemoryBrainInput(ep))
+ 	system := s.memoryGuide() + "\nReturn JSON only. Required shape: evaluation{semantic_importance,emotional_salience,novelty,commitment,recurrence,personal_relevance,triviality,explicit_importance,reason_tags}, episode_summary, semantic_candidates[{kind,text,confidence,entities,durable_explicit,contradicts}]. Every evaluation score is required and must be a number from 0 to 1. Do not rename fields."
+ 	var last error
++	consecutiveValidationFailures := 0
+ 	for attempt := 1; attempt <= 2; attempt++ {
+ 		ctx, cancel := context.WithTimeout(parent, 50*time.Second)
+ 		var wire memoryBrainWire
+@@ -880,6 +926,13 @@
+ 			if err == nil {
+ 				return br, nil
+ 			}
++			consecutiveValidationFailures++
++		} else {
++			// Transport, runner, HTTP, and parser failures remain retryable. Only
++			// repeated schema-valid-but-semantically-invalid model output is
++			// considered poison. This prevents transient local-inference failures
++			// from being permanently discarded.
++			consecutiveValidationFailures = 0
+ 		}
+ 		last = err
+ 		if parent.Err() != nil {
+@@ -891,6 +944,9 @@
+ 	if last == nil {
+ 		last = errors.New("memory brain returned invalid structured output")
+ 	}
++	if consecutiveValidationFailures >= 2 {
++		return model.MemoryBrainResult{}, &terminalMemoryBrainOutputError{err: last}
++	}
+ 	return model.MemoryBrainResult{}, last
+ }
+ 
+--- a/build/sspgpt/src/cmd/memoryservice/main_test.go
++++ b/build/sspgpt/src/cmd/memoryservice/main_test.go
+@@ -412,3 +412,52 @@
+ 		t.Fatal("fixture saturated before directive modifier could be observed")
+ 	}
+ }
++
++func TestProcessedStatusQuarantinedInvalidOutputIsTerminal(t *testing.T) {
++	processed := map[string]bool{}
++	applyProcessedStatus(processed, processedRecord{EpisodeID: "ep-poison", Status: "quarantined_invalid_output"})
++	if !processed["ep-poison"] {
++		t.Fatal("quarantined invalid output must remain processed across restart")
++	}
++	applyProcessedStatus(processed, processedRecord{EpisodeID: "ep-poison", Status: "retry"})
++	if processed["ep-poison"] {
++		t.Fatal("retry status must reopen an episode")
++	}
++}
++
++func TestQuarantineInvalidOutputPersistsProcessedMarker(t *testing.T) {
++	s := testService(t)
++	ep := model.EpisodeCommitV2{EpisodeID: "ep-poison", RequestID: "ep-poison", RequestClass: "chat", Source: "chat", Status: "completed", CompletedAt: model.Now()}
++	cause := &terminalMemoryBrainOutputError{err: fmt.Errorf("memory brain returned degenerate all-zero evaluation")}
++	if err := s.quarantineInvalidOutput(ep, cause); err != nil {
++		t.Fatal(err)
++	}
++	if !s.isProcessed(ep.EpisodeID) {
++		t.Fatal("quarantined episode must be terminally processed in memory")
++	}
++	b, err := os.ReadFile(filepath.Join(s.root, "memory", "processed_v2.jsonl"))
++	if err != nil {
++		t.Fatal(err)
++	}
++	var rec processedRecord
++	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
++	if err := json.Unmarshal([]byte(lines[len(lines)-1]), &rec); err != nil {
++		t.Fatal(err)
++	}
++	if rec.Status != "quarantined_invalid_output" || rec.EpisodeID != ep.EpisodeID {
++		t.Fatalf("unexpected quarantine marker: %#v", rec)
++	}
++	if !strings.Contains(rec.Error, "degenerate all-zero") {
++		t.Fatalf("quarantine reason not persisted: %#v", rec)
++	}
++}
++
++func TestTerminalMemoryBrainOutputErrorClassification(t *testing.T) {
++	terminal := &terminalMemoryBrainOutputError{err: fmt.Errorf("bad structured result")}
++	if !isTerminalMemoryBrainOutputError(terminal) {
++		t.Fatal("terminal invalid output must be recognized")
++	}
++	if isTerminalMemoryBrainOutputError(fmt.Errorf("context deadline exceeded")) {
++		t.Fatal("transient inference failure must not be quarantined")
++	}
++}
+--- a/build/sspgpt/src/tools/v071_architecture_audit.py
++++ b/build/sspgpt/src/tools/v071_architecture_audit.py
+@@ -40,6 +40,8 @@
+ checks['runtime_selective_recall']='http://127.0.0.1:8768/v2/recall' in rt
+ checks['bridge_no_memory_consolidation']='memory_consolidation' not in br.lower()
+ checks['memory_local_brain']='ChatJSON' in mem and 'memory_evaluation_guide.md' in mem
++checks['memory_invalid_output_quarantine']='quarantined_invalid_output' in mem and 'isTerminalMemoryBrainOutputError' in mem and 'quarantineInvalidOutput' in mem
++checks['memory_transient_failure_still_deferred']='MEMORY_BRAIN_DEFER' in mem and 'time.After(60 * time.Second)' in mem
+ checks['raw_move_hard_filter']=('Event.Type == "move"' in mem or 'strings.EqualFold(ep.Event.Type, "move")' in mem)
+ checks['semantic_embedding']='storeSemantic' in mem and 'EmbeddingGeneration' in mem
+ checks['hybrid_retrieval']=all(x in mem for x in ['RRFK','CandidatePool','Rerank','rrfAdd'])
