@@ -1,0 +1,13 @@
+{
+  "format_version": 2,
+  "session_idle_timeout_ms": 600000,
+  "turn_timeout_ms": 300000,
+  "bridge_secondary_ack_enabled": true,
+  "bridge_secondary_ack_max_chars": 40,
+  "bridge_secondary_timeout_ms": 8000,
+  "max_thinking_updates_per_turn": 3,
+  "local_completion_report": true,
+  "allow_local_chat_during_active_turn": false,
+  "pause_autonomous_during_active_turn": true,
+  "raw_transcript_retention": false
+}

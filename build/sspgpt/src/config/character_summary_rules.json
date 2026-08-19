@@ -1,0 +1,16 @@
+{
+  "format_version": 2,
+  "max_items_per_section": 4,
+  "max_item_chars": 140,
+  "retry_max_items_per_section": 2,
+  "retry_max_item_chars": 100,
+  "forbidden_dynamic_terms": [
+    "current affect",
+    "current expression",
+    "current gaze",
+    "current pose",
+    "touch salience",
+    "recent dialogue",
+    "Hot Memory"
+  ]
+}

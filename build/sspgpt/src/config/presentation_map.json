@@ -1,0 +1,8 @@
+{
+  "normal":20, "neutral":20,
+  "smile":25, "cheerful":25, "happy":25,
+  "surprised":3, "concerned":3, "wary":3,
+  "angry":22, "embarrassed_angry":22, "blush_angry":22,
+  "sad":3,
+  "embarrassed":2, "embarrassed_smile":2, "wry_smile":2, "blush":2
+}

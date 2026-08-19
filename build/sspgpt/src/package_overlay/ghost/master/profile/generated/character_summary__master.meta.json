@@ -1,0 +1,14 @@
+{
+  "format_version": 3,
+  "generation": 1,
+  "source_hash": "fee049b31f1c99626d8b03ce339ef199ec3be064be1cc893089aff7596c164c5",
+  "guide_hash": "46639045362bea59eaf552898d280b78281006e4ffe5263841034b07e769ef5e",
+  "config_hash": "e97db27a1aaa0ab85a94aff6e4c4264d35b09c3ab794b97ab7debee73f5a667b",
+  "model_id": "seed-v0.7.1-fix5-clean",
+  "created_at": "2026-08-19T10:00:00+10:00",
+  "validation": "seed-shell-scoped-current-source-hash",
+  "source_updated_at": "",
+  "shell_key": "master",
+  "shell_name": "カフェオレびたしのオールドファッション",
+  "appearance_file": "appearance_master.md"
+}

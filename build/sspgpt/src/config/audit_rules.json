@@ -1,0 +1,6 @@
+{
+  "format_version": 1,
+  "affect_audit": true,
+  "cognition_audit": true,
+  "memory_audit": true
+}

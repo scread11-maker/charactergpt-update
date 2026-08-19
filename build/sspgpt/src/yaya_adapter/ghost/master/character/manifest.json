@@ -1,0 +1,8 @@
+{
+  "format_version": 3,
+  "character_file": "character.md",
+  "example_files": [
+    "examples/dialogue.jsonl",
+    "examples/interaction.jsonl"
+  ]
+}

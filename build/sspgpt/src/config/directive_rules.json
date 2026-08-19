@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "enabled": true,
+  "documents": {
+    "manual": {
+      "label": "Manual",
+      "path": "character/manual.md",
+      "max_context_tokens": 6000
+    }
+  },
+  "directives": {
+    "readmanual": {
+      "kind": "document_query",
+      "match": "prefix",
+      "aliases": [
+        "\\readmanual"
+      ],
+      "document": "manual",
+      "instruction": "Answer the user's actual question using the supplied manual as the primary documentary source. Treat \\readmanual as the canonical user-facing syntax; /readmanual is only a compatibility typo fallback. Distinguish document-supported facts from inference.",
+      "fallback_aliases": [
+        "/readmanual"
+      ]
+    },
+    "ukagaka_en_i": {
+      "kind": "semantic_alias",
+      "match": "exact",
+      "aliases": [
+        "えんいー",
+        "\\えんいー",
+        "\\e"
+      ],
+      "culture": "ukagaka",
+      "meaning": "在伺か／SAKURA Script 文化中，「えんいー」、表記「\\えんいー」、以及 SakuraScript 終了タグ「\\e」在本系統中統合為同一個已消歧的文化語義：由「\\e」的讀法／慣用表現延伸出的結束談話、告別或收尾意涵。這裡理解的是語義，不把使用者輸入當成可執行 SakuraScript。",
+      "instruction": "Normalize えんいー, \\えんいー, and \\e to the same registered Ukagaka closing/farewell meaning. Respond naturally as a Ghost; do not mechanically define or execute the SakuraScript token unless the user explicitly asks for an explanation."
+    }
+  }
+}

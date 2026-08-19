@@ -1,0 +1,8 @@
+Alpha1 runtime engine dependency:
+- yaya.dll version: Tc571-11
+- file architecture: PE32 i386
+- SHA-256: 1e70793048ae1408f51ed3c5b274172151acaaac3816ddbfac41668c7acffcd9
+- source/project: YAYA-shiori/yaya-shiori
+- license: BSD 3-Clause (see ghost/master/YAYA_LICENSE.txt)
+
+The binary itself is delivered in the install NAR, not duplicated in this source tree.

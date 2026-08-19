@@ -1,0 +1,16 @@
+{
+  "format_version": 2,
+  "enabled": true,
+  "half_life_seconds": 300,
+  "forget_threshold": 20,
+  "diminishing_scale": 900,
+  "impulses": {
+    "light_touch": 220,
+    "gentle_stroke": 260,
+    "stroke": 300,
+    "heavy_tap": 340,
+    "resting_touch": 120,
+    "rough_rub": 450,
+    "grab": 500
+  }
+}
