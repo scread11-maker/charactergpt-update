@@ -31,7 +31,7 @@ jobs:
           set -euo pipefail
           rm -rf /tmp/sspgpt-fix14
           mkdir -p /tmp/sspgpt-fix14/src
-          cat build/sspgpt/source.parts/part-* | base64 -d > /tmp/sspgpt-fix14/source.tar.xz
+          cat build/sspgpt/source.parts/part-* | base64 --decode --ignore-garbage > /tmp/sspgpt-fix14/source.tar.xz
           echo "4deea8ced8a2bb9b308d4bc6273a4f727eda793d0b514f57f642e7d500e9c6ac  /tmp/sspgpt-fix14/source.tar.xz" | sha256sum -c -
           tar -xJf /tmp/sspgpt-fix14/source.tar.xz -C /tmp/sspgpt-fix14/src
           test -f /tmp/sspgpt-fix14/src/go.mod
