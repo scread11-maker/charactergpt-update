@@ -1,0 +1,7 @@
+{
+  "tunnel_id": "",
+  "runtime_api_key_env": "CONTROL_PLANE_API_KEY",
+  "control_plane_base_url": "",
+  "organization_id": "",
+  "poll_timeout_ms": 0
+}
