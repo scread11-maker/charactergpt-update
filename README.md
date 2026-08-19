@@ -2,13 +2,13 @@
 
 SSP network-update repository for sspgpt / 伺的なGPT.
 
-Current stable online-update channel: **v071fix5/**  
-Current stable baseline: **SSPGPT v0.7.1 GPU1 fix5**  
+Current stable online-update channel: **v071fix10/**  
+Current stable baseline: **SSPGPT v0.7.1 GPU1 fix10**  
 Installed Ghost directory: **sspgpt_proto_v07**
 
-## v0.7.1 fix5 update policy
+## v0.7.1 fix10 update policy
 
-The `v071fix5/` channel is intentionally conservative. SSP native network update is limited to bootstrap/presentation-safe text and does **not** replace executable/runtime-owned or user-owned state.
+The `v071fix10/` channel is intentionally conservative. SSP native network update is limited to bootstrap/presentation-safe text and does **not** replace executable/runtime-owned or user-owned state.
 
 Excluded from ordinary network updates:
 - Runtime / Bridge / MemoryService / TouchProgress / Plug executables
@@ -20,4 +20,4 @@ Excluded from ordinary network updates:
 
 Core architecture/config-layout upgrades continue to be distributed as full NAR packages.
 
-Historical update channels have been removed from the active tree. Their history remains recoverable from Git history; they are not supported update targets.
+Superseded update channels are removed from the active tree. Their history remains recoverable from Git history; they are not supported update targets.
