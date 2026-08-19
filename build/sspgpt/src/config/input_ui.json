@@ -1,0 +1,42 @@
+{
+  "emotions": [
+    "neutral",
+    "happy",
+    "cheerful",
+    "shy",
+    "surprised",
+    "concerned",
+    "annoyed",
+    "angry",
+    "sad"
+  ],
+  "default_emotion": "neutral",
+  "default_check_ms": 15000,
+  "check_thresholds": [
+    {
+      "label": "5 秒",
+      "milliseconds": 5000
+    },
+    {
+      "label": "10 秒",
+      "milliseconds": 10000
+    },
+    {
+      "label": "15 秒",
+      "milliseconds": 15000
+    },
+    {
+      "label": "30 秒",
+      "milliseconds": 30000
+    },
+    {
+      "label": "60 秒",
+      "milliseconds": 60000
+    },
+    {
+      "label": "手動",
+      "milliseconds": 0
+    }
+  ],
+  "ssp_backlog_mirror": true
+}

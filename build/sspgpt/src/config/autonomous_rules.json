@@ -1,0 +1,11 @@
+{
+  "autonomous_enabled": true,
+  "autonomous_tick_interval_ms": 240000,
+  "minimum_idle_before_tick_ms": 120000,
+  "maximum_pending_continuations": 1,
+  "minimum_defer_ms": 10000,
+  "maximum_defer_ms": 300000,
+  "continuation_grace_ms": 120000,
+  "cancel_deferred_on_new_user_input": true,
+  "allow_autonomous_during_touch": false
+}

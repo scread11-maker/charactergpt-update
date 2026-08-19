@@ -1,0 +1,28 @@
+{
+  "format_version": 3,
+  "default_depth": "medium",
+  "embedding_dimension": 512,
+  "query_instruction": "Instruct: Retrieve memories relevant to the current user request and situation. Query: ",
+  "rrf_k": 60,
+  "presets": {
+    "light": {
+      "candidate_pool": 100,
+      "context_budget_tokens": 512,
+      "recall_timeout_ms": 700
+    },
+    "medium": {
+      "candidate_pool": 300,
+      "context_budget_tokens": 1024,
+      "recall_timeout_ms": 1200
+    },
+    "deep": {
+      "candidate_pool": 600,
+      "context_budget_tokens": 2048,
+      "recall_timeout_ms": 2000
+    },
+    "unbounded": {
+      "replay_max_context_tokens": 32768,
+      "recall_timeout_ms": 700
+    }
+  }
+}

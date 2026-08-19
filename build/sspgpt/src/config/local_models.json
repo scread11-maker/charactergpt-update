@@ -1,0 +1,58 @@
+{
+  "format_version": 2,
+  "auto_download": true,
+  "device_policy": {
+    "mode": "auto",
+    "gpu_layers": 99,
+    "cpu_fallback": true
+  },
+  "cuda_runner": {
+    "id": "llama.cpp-b10336-win-cuda12.4-x64",
+    "subdir": "llama-cuda12",
+    "binary": "llama-server.exe",
+    "archives": [
+      {
+        "url": "https://github.com/ggml-org/llama.cpp/releases/download/b10336/llama-b10336-bin-win-cuda-12.4-x64.zip",
+        "sha256": ""
+      },
+      {
+        "url": "https://github.com/ggml-org/llama.cpp/releases/download/b10336/cudart-llama-bin-win-cuda-12.4-x64.zip",
+        "sha256": "8c79a9b226de4b3cacfd1f83d24f962d0773be79f1e7b75c6af4ded7e32ae1d6"
+      }
+    ]
+  },
+  "runner": {
+    "id": "llama.cpp-b10336-win-cpu-x64",
+    "subdir": "llama",
+    "archive_url": "https://github.com/ggml-org/llama.cpp/releases/download/b10336/llama-b10336-bin-win-cpu-x64.zip",
+    "archive_sha256": "",
+    "binary": "llama-server.exe"
+  },
+  "memory_llm": {
+    "id": "qwen3-0.6b-q4_0",
+    "filename": "Qwen3-0.6B-Q4_0.gguf",
+    "url": "https://huggingface.co/ggml-org/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q4_0.gguf?download=true",
+    "sha256": "da2572f16c06133561ce56accaa822216f2391ef4d37fba427801cd6736417d4",
+    "port": 8784,
+    "args": ["--ctx-size", "8192", "--jinja", "--no-webui"]
+  },
+  "embedder": {
+    "id": "qwen3-embedding-0.6b-q8_0",
+    "filename": "Qwen3-Embedding-0.6B-Q8_0.gguf",
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/main/Qwen3-Embedding-0.6B-Q8_0.gguf?download=true",
+    "sha256": "06507c7b42688469c4e7298b0a1e16deff06caf291cf0a5b278c308249c3e439",
+    "port": 8785,
+    "args": ["--embedding", "--pooling", "last", "--ubatch-size", "1024", "--no-webui"]
+  },
+  "reranker": {
+    "id": "qwen3-reranker-0.6b-q8_0",
+    "filename": "qwen3-reranker-0.6b-q8_0.gguf",
+    "url": "https://huggingface.co/ggml-org/Qwen3-Reranker-0.6B-Q8_0-GGUF/resolve/main/qwen3-reranker-0.6b-q8_0.gguf?download=true",
+    "sha256": "22c9979ce4fbcdc5acdc310c6641c32797eff1aa980b8f7a2db8a8ea23429a48",
+    "port": 8786,
+    "args": ["--embedding", "--pooling", "rank", "--no-webui"]
+  },
+  "embedding_dimension": 512,
+  "embedding_generation": 1,
+  "mock": false
+}

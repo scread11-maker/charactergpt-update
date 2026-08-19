@@ -1,0 +1,115 @@
+{
+  "format_version": 1,
+  "shell_name": "カフェオレびたしのオールドファッション",
+  "default_pose": "normal",
+  "poses": [
+    {
+      "id": "normal",
+      "meaning": "ordinary relaxed standing composition with both hands in the shell's normal position",
+      "uses": [
+        "ordinary conversation",
+        "reactions that do not need a special body pose"
+      ]
+    },
+    {
+      "id": "hand_to_chin",
+      "meaning": "one hand is visibly raised to or held near the chin; the arm/hand is therefore raised rather than resting in the normal pose",
+      "uses": [
+        "raising one hand / 舉手 when the user explicitly asks for it and this pose is an appropriate visual approximation",
+        "hand-to-chin / 托腮 presentation",
+        "thoughtful or deliberate moments without requiring the stronger thinking pose"
+      ]
+    },
+    {
+      "id": "thinking",
+      "meaning": "a distinct visibly pondering or mentally struggling composition built from the raised-hand/chin family",
+      "uses": [
+        "clear deliberation",
+        "visible puzzlement or mental effort",
+        "moments where the character should look like she is actively thinking"
+      ]
+    }
+  ],
+  "expressions": [
+    "neutral",
+    "smile",
+    "cheerful",
+    "embarrassed",
+    "embarrassed_smile",
+    "surprised",
+    "concerned",
+    "angry",
+    "embarrassed_angry",
+    "sad",
+    "wry_smile",
+    "blush",
+    "blush_angry",
+    "eyes_closed"
+  ],
+  "gazes": [
+    "normal",
+    "user",
+    "away"
+  ],
+  "surfaces": [
+    {"pose":"normal","expression":"neutral","gaze":"normal","surface":0},
+    {"pose":"normal","expression":"neutral","gaze":"user","surface":20},
+    {"pose":"normal","expression":"smile","gaze":"normal","surface":5},
+    {"pose":"normal","expression":"smile","gaze":"user","surface":25},
+    {"pose":"normal","expression":"cheerful","gaze":"normal","surface":26},
+    {"pose":"normal","expression":"embarrassed","gaze":"normal","surface":1},
+    {"pose":"normal","expression":"embarrassed","gaze":"user","surface":21},
+    {"pose":"normal","expression":"embarrassed_smile","gaze":"normal","surface":33},
+    {"pose":"normal","expression":"embarrassed_smile","gaze":"user","surface":30},
+    {"pose":"normal","expression":"surprised","gaze":"normal","surface":2},
+    {"pose":"normal","expression":"concerned","gaze":"normal","surface":3},
+    {"pose":"normal","expression":"concerned","gaze":"user","surface":23},
+    {"pose":"normal","expression":"angry","gaze":"normal","surface":7},
+    {"pose":"normal","expression":"angry","gaze":"user","surface":27},
+    {"pose":"normal","expression":"embarrassed_angry","gaze":"normal","surface":9},
+    {"pose":"normal","expression":"embarrassed_angry","gaze":"user","surface":29},
+    {"pose":"normal","expression":"sad","gaze":"normal","surface":4},
+    {"pose":"normal","expression":"wry_smile","gaze":"normal","surface":8},
+    {"pose":"normal","expression":"wry_smile","gaze":"user","surface":28},
+    {"pose":"normal","expression":"blush","gaze":"normal","surface":1},
+    {"pose":"normal","expression":"blush","gaze":"user","surface":21},
+    {"pose":"normal","expression":"blush_angry","gaze":"normal","surface":9},
+    {"pose":"normal","expression":"blush_angry","gaze":"user","surface":29},
+    {"pose":"normal","expression":"eyes_closed","gaze":"normal","surface":6},
+
+    {"pose":"hand_to_chin","expression":"neutral","gaze":"normal","surface":100},
+    {"pose":"hand_to_chin","expression":"neutral","gaze":"user","surface":110},
+    {"pose":"hand_to_chin","expression":"smile","gaze":"normal","surface":105},
+    {"pose":"hand_to_chin","expression":"smile","gaze":"user","surface":115},
+    {"pose":"hand_to_chin","expression":"cheerful","gaze":"normal","surface":116},
+    {"pose":"hand_to_chin","expression":"embarrassed","gaze":"normal","surface":101},
+    {"pose":"hand_to_chin","expression":"embarrassed","gaze":"user","surface":111},
+    {"pose":"hand_to_chin","expression":"embarrassed_smile","gaze":"normal","surface":133},
+    {"pose":"hand_to_chin","expression":"embarrassed_smile","gaze":"user","surface":130},
+    {"pose":"hand_to_chin","expression":"surprised","gaze":"normal","surface":102},
+    {"pose":"hand_to_chin","expression":"concerned","gaze":"normal","surface":103},
+    {"pose":"hand_to_chin","expression":"concerned","gaze":"user","surface":113},
+    {"pose":"hand_to_chin","expression":"angry","gaze":"normal","surface":107},
+    {"pose":"hand_to_chin","expression":"angry","gaze":"user","surface":117},
+    {"pose":"hand_to_chin","expression":"embarrassed_angry","gaze":"normal","surface":109},
+    {"pose":"hand_to_chin","expression":"embarrassed_angry","gaze":"user","surface":119},
+    {"pose":"hand_to_chin","expression":"sad","gaze":"normal","surface":104},
+    {"pose":"hand_to_chin","expression":"wry_smile","gaze":"normal","surface":108},
+    {"pose":"hand_to_chin","expression":"wry_smile","gaze":"user","surface":118},
+    {"pose":"hand_to_chin","expression":"blush","gaze":"normal","surface":101},
+    {"pose":"hand_to_chin","expression":"blush","gaze":"user","surface":111},
+    {"pose":"hand_to_chin","expression":"blush_angry","gaze":"normal","surface":109},
+    {"pose":"hand_to_chin","expression":"blush_angry","gaze":"user","surface":119},
+    {"pose":"hand_to_chin","expression":"eyes_closed","gaze":"normal","surface":106},
+
+    {"pose":"thinking","expression":"neutral","gaze":"normal","surface":120},
+    {"pose":"thinking","expression":"neutral","gaze":"away","surface":121},
+    {"pose":"thinking","expression":"concerned","gaze":"normal","surface":122},
+    {"pose":"thinking","expression":"embarrassed","gaze":"normal","surface":123},
+    {"pose":"thinking","expression":"embarrassed","gaze":"away","surface":124},
+    {"pose":"thinking","expression":"embarrassed_angry","gaze":"normal","surface":125},
+    {"pose":"thinking","expression":"blush","gaze":"normal","surface":123},
+    {"pose":"thinking","expression":"blush","gaze":"away","surface":124},
+    {"pose":"thinking","expression":"blush_angry","gaze":"normal","surface":125}
+  ]
+}

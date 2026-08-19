@@ -1,0 +1,6 @@
+charset,UTF-8
+type,ghost
+name,CharacterGPT v0.7.1 GPU1 (YAYA)
+directory,sspgpt_proto_v07
+
+refresh,0

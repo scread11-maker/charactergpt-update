@@ -1,0 +1,33 @@
+{
+  "format_version": 4,
+  "weights": {
+    "semantic_importance": 1.0,
+    "emotional_salience": 1.35,
+    "novelty": 0.65,
+    "commitment": 1.2,
+    "personal_relevance": 0.85,
+    "explicit_importance": 1.5,
+    "triviality": -1.1,
+    "recurrence_relevance": 0.55
+  },
+  "thresholds": {
+    "semantic_store": 0.42,
+    "strong_retention": 0.72,
+    "hot_memory_candidate": 0.6
+  },
+  "observation_min_evidence": 2,
+  "hot_memory_max_items": 5,
+  "modifiers": {
+    "source": {},
+    "request_class": {},
+    "gesture": {},
+    "reaction_emotion": {},
+    "directive_kind": {
+      "document_query": 0.16,
+      "semantic_alias": 0.04
+    },
+    "directive_id": {
+      "readmanual": 0.08
+    }
+  }
+}
