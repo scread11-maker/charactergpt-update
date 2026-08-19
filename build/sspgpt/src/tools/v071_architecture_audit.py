@@ -18,7 +18,7 @@ def jload(p):
 checks={}
 # fix14 build/toolchain baseline
 go_mod=text('go.mod')
-checks['go126_module_floor']=('go 1.26.0' in go_mod)
+checks['go126_module_floor']=('go 1.26.2' in go_mod)
 checks['go1266_preferred_toolchain']=('toolchain go1.26.6' in go_mod)
 checks['go1266_version_file']=(text('.go-version').strip()=='1.26.6')
 model=text('internal/model/model.go'); cfgmodel=text('internal/model/config.go')
