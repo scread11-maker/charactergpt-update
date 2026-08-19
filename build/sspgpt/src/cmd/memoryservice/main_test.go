@@ -412,3 +412,52 @@ func TestDirectiveRetentionModifiersAreMemoryPolicyNotRuntimePolicy(t *testing.T
 		t.Fatal("fixture saturated before directive modifier could be observed")
 	}
 }
+
+func TestProcessedStatusQuarantinedInvalidOutputIsTerminal(t *testing.T) {
+	processed := map[string]bool{}
+	applyProcessedStatus(processed, processedRecord{EpisodeID: "ep-poison", Status: "quarantined_invalid_output"})
+	if !processed["ep-poison"] {
+		t.Fatal("quarantined invalid output must remain processed across restart")
+	}
+	applyProcessedStatus(processed, processedRecord{EpisodeID: "ep-poison", Status: "retry"})
+	if processed["ep-poison"] {
+		t.Fatal("retry status must reopen an episode")
+	}
+}
+
+func TestQuarantineInvalidOutputPersistsProcessedMarker(t *testing.T) {
+	s := testService(t)
+	ep := model.EpisodeCommitV2{EpisodeID: "ep-poison", RequestID: "ep-poison", RequestClass: "chat", Source: "chat", Status: "completed", CompletedAt: model.Now()}
+	cause := &terminalMemoryBrainOutputError{err: fmt.Errorf("memory brain returned degenerate all-zero evaluation")}
+	if err := s.quarantineInvalidOutput(ep, cause); err != nil {
+		t.Fatal(err)
+	}
+	if !s.isProcessed(ep.EpisodeID) {
+		t.Fatal("quarantined episode must be terminally processed in memory")
+	}
+	b, err := os.ReadFile(filepath.Join(s.root, "memory", "processed_v2.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rec processedRecord
+	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
+	if err := json.Unmarshal([]byte(lines[len(lines)-1]), &rec); err != nil {
+		t.Fatal(err)
+	}
+	if rec.Status != "quarantined_invalid_output" || rec.EpisodeID != ep.EpisodeID {
+		t.Fatalf("unexpected quarantine marker: %#v", rec)
+	}
+	if !strings.Contains(rec.Error, "degenerate all-zero") {
+		t.Fatalf("quarantine reason not persisted: %#v", rec)
+	}
+}
+
+func TestTerminalMemoryBrainOutputErrorClassification(t *testing.T) {
+	terminal := &terminalMemoryBrainOutputError{err: fmt.Errorf("bad structured result")}
+	if !isTerminalMemoryBrainOutputError(terminal) {
+		t.Fatal("terminal invalid output must be recognized")
+	}
+	if isTerminalMemoryBrainOutputError(fmt.Errorf("context deadline exceeded")) {
+		t.Fatal("transient inference failure must not be quarantined")
+	}
+}
