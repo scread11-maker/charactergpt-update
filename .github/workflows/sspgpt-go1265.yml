@@ -1,4 +1,4 @@
-name: SSPGPT Go 1.26.5 Build
+name: SSPGPT Go 1.26.6 Build
 
 on:
   push:
@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: sspgpt-go1265-${{ github.ref }}
+  group: sspgpt-go1266-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -30,17 +30,17 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
         with:
-          go-version: '1.26.5'
+          go-version: '1.26.6'
           cache: false
       - name: Verify toolchain
         shell: bash
         run: |
           set -euo pipefail
-          test "$(cat .go-version)" = "1.26.5"
+          test "$(cat .go-version)" = "1.26.6"
           grep -Fx "go 1.26.0" go.mod
-          grep -Fx "toolchain go1.26.5" go.mod
+          grep -Fx "toolchain go1.26.6" go.mod
           go version
-          test "$(go env GOVERSION)" = "go1.26.5"
+          test "$(go env GOVERSION)" = "go1.26.6"
       - name: Unit tests
         env:
           GOTOOLCHAIN: local
@@ -68,7 +68,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
         with:
-          go-version: '1.26.5'
+          go-version: '1.26.6'
           cache: false
       - name: Build Windows binaries
         env:
@@ -94,7 +94,7 @@ jobs:
           printf '%s\n' "${GITHUB_SHA}" > artifact/output/GIT_COMMIT.txt
       - uses: actions/upload-artifact@v7.0.1
         with:
-          name: SSPGPT-v07-fix14-go1265-windows-${{ matrix.arch }}
+          name: SSPGPT-v07-fix14b-go1266-windows-${{ matrix.arch }}
           path: build/sspgpt/src/artifact/output
           if-no-files-found: error
           retention-days: 30
