@@ -1,1 +1,2 @@
 4deea8ced8a2bb9b308d4bc6273a4f727eda793d0b514f57f642e7d500e9c6ac  source.tar.xz
+# CI trigger: exact archive checksum remains authoritative.
