@@ -74,6 +74,7 @@ type processedRecord struct {
 	EpisodeID   string `json:"episode_id"`
 	ProcessedAt string `json:"processed_at"`
 	Status      string `json:"status"`
+	Error       string `json:"error,omitempty"`
 }
 
 func applyProcessedStatus(processed map[string]bool, x processedRecord) {
@@ -81,11 +82,34 @@ func applyProcessedStatus(processed map[string]bool, x processedRecord) {
 		return
 	}
 	switch x.Status {
-	case "ok", "skipped_pre_epoch":
+	case "ok", "skipped_pre_epoch", "quarantined_invalid_output":
 		processed[x.EpisodeID] = true
 	case "revalidate_fix8", "invalid_schema", "retry":
 		delete(processed, x.EpisodeID)
 	}
+}
+
+type terminalMemoryBrainOutputError struct {
+	err error
+}
+
+func (e *terminalMemoryBrainOutputError) Error() string {
+	if e == nil || e.err == nil {
+		return "memory brain returned persistently invalid structured output"
+	}
+	return e.err.Error()
+}
+
+func (e *terminalMemoryBrainOutputError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.err
+}
+
+func isTerminalMemoryBrainOutputError(err error) bool {
+	var target *terminalMemoryBrainOutputError
+	return errors.As(err, &target)
 }
 
 type rawRecent struct {
@@ -688,6 +712,13 @@ func (s *service) worker() {
 					s.log.Printf("MEMORY_BRAIN_PAUSED episode=%s reason=shutdown", ep.EpisodeID)
 					return
 				}
+				if isTerminalMemoryBrainOutputError(err) {
+					if qerr := s.quarantineInvalidOutput(ep, err); qerr == nil {
+						continue
+					} else {
+						s.log.Printf("MEMORY_BRAIN_QUARANTINE_PERSIST_ERROR episode=%s error=%v", ep.EpisodeID, qerr)
+					}
+				}
 				s.log.Printf("MEMORY_BRAIN_DEFER episode=%s error=%v", ep.EpisodeID, err)
 				s.audit.Printf("MEMORY_BRAIN_DEGRADED episode=%s error=%q", ep.EpisodeID, err.Error())
 				go func(e model.EpisodeCommitV2) {
@@ -705,6 +736,20 @@ func (s *service) worker() {
 		}
 	}
 }
+
+func (s *service) quarantineInvalidOutput(ep model.EpisodeCommitV2, cause error) error {
+	rec := processedRecord{EpisodeID: ep.EpisodeID, ProcessedAt: model.Now(), Status: "quarantined_invalid_output", Error: errString(cause)}
+	if err := appendJSON(filepath.Join(s.root, "memory", "processed_v2.jsonl"), rec); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	s.processed[ep.EpisodeID] = true
+	s.mu.Unlock()
+	s.log.Printf("MEMORY_BRAIN_QUARANTINED episode=%s reason=invalid_output", ep.EpisodeID)
+	s.audit.Printf("MEMORY_BRAIN_QUARANTINED episode=%s status=quarantined_invalid_output error=%q", ep.EpisodeID, errString(cause))
+	return nil
+}
+
 func (s *service) isProcessed(id string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -869,6 +914,7 @@ func (s *service) runMemoryBrain(parent context.Context, ep model.EpisodeCommitV
 	b, _ := json.Marshal(compactMemoryBrainInput(ep))
 	system := s.memoryGuide() + "\nReturn JSON only. Required shape: evaluation{semantic_importance,emotional_salience,novelty,commitment,recurrence,personal_relevance,triviality,explicit_importance,reason_tags}, episode_summary, semantic_candidates[{kind,text,confidence,entities,durable_explicit,contradicts}]. Every evaluation score is required and must be a number from 0 to 1. Do not rename fields."
 	var last error
+	consecutiveValidationFailures := 0
 	for attempt := 1; attempt <= 2; attempt++ {
 		ctx, cancel := context.WithTimeout(parent, 50*time.Second)
 		var wire memoryBrainWire
@@ -880,6 +926,13 @@ func (s *service) runMemoryBrain(parent context.Context, ep model.EpisodeCommitV
 			if err == nil {
 				return br, nil
 			}
+			consecutiveValidationFailures++
+		} else {
+			// Transport, runner, HTTP, and parser failures remain retryable. Only
+			// repeated schema-valid-but-semantically-invalid model output is
+			// considered poison. This prevents transient local-inference failures
+			// from being permanently discarded.
+			consecutiveValidationFailures = 0
 		}
 		last = err
 		if parent.Err() != nil {
@@ -890,6 +943,9 @@ func (s *service) runMemoryBrain(parent context.Context, ep model.EpisodeCommitV
 	}
 	if last == nil {
 		last = errors.New("memory brain returned invalid structured output")
+	}
+	if consecutiveValidationFailures >= 2 {
+		return model.MemoryBrainResult{}, &terminalMemoryBrainOutputError{err: last}
 	}
 	return model.MemoryBrainResult{}, last
 }

@@ -40,6 +40,8 @@ checks['runtime_direct_bridge_fastpath']='http://127.0.0.1:8767/v1/respond' in r
 checks['runtime_selective_recall']='http://127.0.0.1:8768/v2/recall' in rt
 checks['bridge_no_memory_consolidation']='memory_consolidation' not in br.lower()
 checks['memory_local_brain']='ChatJSON' in mem and 'memory_evaluation_guide.md' in mem
+checks['memory_invalid_output_quarantine']='quarantined_invalid_output' in mem and 'isTerminalMemoryBrainOutputError' in mem and 'quarantineInvalidOutput' in mem
+checks['memory_transient_failure_still_deferred']='MEMORY_BRAIN_DEFER' in mem and 'time.After(60 * time.Second)' in mem
 checks['raw_move_hard_filter']=('Event.Type == "move"' in mem or 'strings.EqualFold(ep.Event.Type, "move")' in mem)
 checks['semantic_embedding']='storeSemantic' in mem and 'EmbeddingGeneration' in mem
 checks['hybrid_retrieval']=all(x in mem for x in ['RRFK','CandidatePool','Rerank','rrfAdd'])
