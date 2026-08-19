@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: sspgpt-go1265-bootstrap-${{ github.ref }}
@@ -44,7 +44,6 @@ jobs:
           echo "91b91244ea22a1f47ef913c4f353310e8b6289d2da730ff43d5375c88b3063e2  build/sspgpt/source.parts/part-006" | sha256sum -c -
           : > /tmp/sspgpt-fix14/source.tar.xz
           while IFS= read -r f; do
-            echo "decode $f"
             base64 --decode "$f" >> /tmp/sspgpt-fix14/source.tar.xz
           done < <(find build/sspgpt/source.parts -maxdepth 1 -type f -name 'part-*' | sort)
           echo "4deea8ced8a2bb9b308d4bc6273a4f727eda793d0b514f57f642e7d500e9c6ac  /tmp/sspgpt-fix14/source.tar.xz" | sha256sum -c -
@@ -115,3 +114,20 @@ jobs:
           path: /tmp/sspgpt-fix14/src/artifact/386
           if-no-files-found: error
           retention-days: 30
+
+      - name: Promote validated readable source branch
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git switch --force-create promotion/fix14-go1265-readable origin/main
+          rm -rf build/sspgpt/src build/sspgpt/source.parts
+          mkdir -p build/sspgpt/src
+          cp -a /tmp/sspgpt-fix14/src/. build/sspgpt/src/
+          rm -f .github/workflows/sspgpt-bootstrap-go1265.yml
+          git add -A build/sspgpt .github/workflows/sspgpt-bootstrap-go1265.yml
+          git commit -m "Promote validated SSPGPT fix14 Go 1.26.5 readable source"
+          git push --force origin HEAD:refs/heads/promotion/fix14-go1265-readable
