@@ -1,0 +1,60 @@
+name: Finalize fix15 unified MCP source
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.ref == 'fix15-mcp-rebuild'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: fix15-mcp-rebuild
+          fetch-depth: 0
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: '1.26.6'
+      - name: Apply linked lifecycle and YAYA patch
+        run: git apply tools/fix15_finalize.patch
+      - name: Convert architecture audit to unified Link invariants
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p=Path('build/sspgpt/src/tools/v071_architecture_audit.py')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace("ctx=text('cmd/contextservice/main.go'); core=text('yaya_adapter/ghost/master/cgpt_core.dic')", "link=text('cmd/link/main.go'); core=text('yaya_adapter/ghost/master/cgpt_core.dic')")
+          s=s.replace("checks['mcp_'+name]=name in ctx", "checks['mcp_'+name]=name in link")
+          s=s.replace("checks['no_cot_tool_surface']='\"chain_of_thought\"' not in ctx.lower() and '\"scratchpad\"' not in ctx.lower()", "checks['no_cot_tool_surface']='chain-of-thought' in link.lower() and 'scratchpad' in link.lower() and '\"chain_of_thought\"' not in link.lower() and '\"scratchpad\"' not in link.lower()")
+          s=s.replace("checks['plug_not_started_on_boot']='Plug' not in boot and 'ContextService' not in boot", "checks['plug_not_started_on_boot']='Plug' not in boot and 'CharacterGPTLink.exe' not in boot")
+          s=s.replace("checks['shutdown_idempotent']=all('shutdownOnce' in x for x in [rt,br,mem,touch,ctx])", "checks['shutdown_idempotent']=all('shutdownOnce' in x for x in [rt,br,mem,touch])")
+          marker="checks['no_cot_tool_surface']='chain-of-thought' in link.lower() and 'scratchpad' in link.lower() and '\"chain_of_thought\"' not in link.lower() and '\"scratchpad\"' not in link.lower()\n"
+          extra="""checks['mcp_unified_link_executable']=(ROOT/'cmd/link/main.go').exists() and not (ROOT/'cmd/contextservice').exists() and not (ROOT/'cmd/mcpadapter').exists() and not (ROOT/'cmd/tunnelsetup').exists()\nchecks['mcp_official_go_sdk']='github.com/modelcontextprotocol/go-sdk/mcp' in link and 'github.com/modelcontextprotocol/go-sdk v1.7.0' in go_mod\nchecks['mcp_embedded_secure_tunnel']='github.com/openai/tunnel-client' in link and 'github.com/openai/tunnel-client v0.0.11' in go_mod and 'mcp.NewInMemoryTransports()' in link\nchecks['mcp_no_public_or_local_data_listener']='NewStreamableHTTPHandler' not in link and '/mcp' not in link and 'http.ListenAndServe' not in link\nchecks['mcp_runtime_is_direct_authority']='http://127.0.0.1:8770' in link and '/linked/turn/commit' in link and '/linked/session/activate' in link\nchecks['mcp_no_legacy_cloudflare']=all(x not in (link+core+text('scripts/build_windows_amd64.sh')).lower() for x in ['cloudflared','contextservice.exe','mc padapter.exe'.replace(' ',''),'tunnelsetup.exe'])\nchecks['mcp_runtime_key_not_persisted']='runtime_api_key_env' in link and 'os.Getenv' in link and 'APIKey:              apiKey' in link and 'WriteFile' not in link\nchecks['mcp_link_gui_only']='build_gui ./cmd/link \"$out/Plug/CharacterGPTLink.exe\"' in text('scripts/build_windows_amd64.sh') and 'CharacterGPTContextService.exe' not in text('scripts/build_windows_amd64.sh') and 'CharacterGPTMcpAdapter.exe' not in text('scripts/build_windows_amd64.sh') and 'CharacterGPTTunnelSetup.exe' not in text('scripts/build_windows_amd64.sh')\nchecks['linked_abnormal_release']=all(x in linked for x in ['releaseLinkedPresentation','session_takeover:','abort_already_inactive','deactivate_already_inactive','timeout:']) and 'OnCharacterGPTLinkedRelease' in linked\nchecks['linked_abort_deactivate_idempotent']='already_inactive' in linked and 'linked turn mismatch' in linked and 'invalid linked session' in linked\n"""
+          if marker not in s:
+              raise SystemExit('MCP audit insertion marker not found')
+          s=s.replace(marker, marker+extra, 1)
+          s=re.sub(r"'version':'0\.7\.1-[^']+'", "'version':'0.7.1-fix15-mcp'", s, count=1)
+          p.write_text(s,encoding='utf-8')
+      - name: Format and resolve module graph
+        run: |
+          cd build/sspgpt/src
+          gofmt -w cmd/link/*.go cmd/runtime/v071_linked.go
+          go mod tidy
+      - name: Remove one-time finalizer material
+        run: |
+          rm -f tools/fix15_finalize.patch
+          rm -f .github/workflows/fix15-finalize.yml
+      - name: Commit finalized source back to branch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --check
+          git commit -m 'Finalize unified CharacterGPT Link source'
+          git push origin HEAD:fix15-mcp-rebuild
