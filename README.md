@@ -3,7 +3,7 @@
 SSP network-update repository for sspgpt / 伺的なGPT.
 
 Current stable online-update channel: **v07/**  
-Current stable baseline: **SSPGPT v0.7.1 GPU1 fix10**  
+Current stable baseline: **SSPGPT v0.7.1 GPU1 fix13f**  
 Installed Ghost directory: **sspgpt_proto_v07**
 
 ## v0.7 stable update policy
@@ -21,5 +21,7 @@ Excluded from ordinary network updates:
 - memory state, credentials/API keys and logs
 
 Core architecture/config-layout upgrades continue to be distributed as full NAR packages.
+
+Current fix13f keeps sent-input mapping as a simple user-facing **是/否** option; `是` uses the established secondary-character (Owl) presentation path. Raw Replay remains independent and is not sourced from SSP backlog.
 
 Superseded update channels are removed from the active tree. Their history remains recoverable from Git history; they are not supported update targets.
