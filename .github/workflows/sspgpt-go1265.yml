@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: sspgpt-go1266-${{ github.ref }}
@@ -41,17 +41,6 @@ jobs:
           grep -Fx "toolchain go1.26.6" go.mod
           go version
           test "$(go env GOVERSION)" = "go1.26.6"
-      - name: Refresh toolchain audit guard in checkout
-        shell: bash
-        run: |
-          set -euo pipefail
-          sed -i \
-            -e 's/0\.7\.1-fix14-go1265/0.7.1-fix14b-go1266/' \
-            -e 's/go1265_preferred_toolchain/go1266_preferred_toolchain/' \
-            -e 's/toolchain go1\.26\.5/toolchain go1.26.6/' \
-            -e 's/go1265_version_file/go1266_version_file/' \
-            -e "s/=='1\.26\.5'/=='1.26.6'/" \
-            tools/v071_architecture_audit.py
       - name: Unit tests
         env:
           GOTOOLCHAIN: local
@@ -64,21 +53,6 @@ jobs:
         run: python3 tools/v071_architecture_audit.py
       - name: YAYA static audit
         run: python3 tools/yaya_static_audit.py
-      - name: Persist refreshed audit guard to PR branch
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        working-directory: .
-        shell: bash
-        run: |
-          set -euo pipefail
-          cp build/sspgpt/src/tools/v071_architecture_audit.py /tmp/v071_architecture_audit.py
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin fix14b-go1266
-          git switch --force-create fix14b-go1266 origin/fix14b-go1266
-          cp /tmp/v071_architecture_audit.py build/sspgpt/src/tools/v071_architecture_audit.py
-          git add build/sspgpt/src/tools/v071_architecture_audit.py
-          git diff --cached --quiet || git commit -m "Refresh Go 1.26.6 architecture audit guard"
-          git push origin HEAD:refs/heads/fix14b-go1266
 
   build:
     needs: validate
