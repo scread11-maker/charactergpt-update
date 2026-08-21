@@ -1,0 +1,202 @@
+name: SSPGPT v0.8 Go 1.27 First Alchemy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "build/sspgpt/v08/**"
+      - ".github/workflows/sspgpt-v08-go127.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "build/sspgpt/v08/**"
+      - ".github/workflows/sspgpt-v08-go127.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sspgpt-v08-go127-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.27.0'
+  V08_ROOT: build/sspgpt/v08
+  WORK: build/sspgpt/v08/.work
+
+jobs:
+  contract-validation:
+    name: Frozen contract validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: '1.27.0'
+          cache: false
+
+      - name: Expand pinned v0.8 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          unzip -oq "$V08_ROOT/source.zip" -d "$WORK"
+          unzip -t "$V08_ROOT/source.zip" >/dev/null
+          (cd "$V08_ROOT" && sha256sum -c HOST_SEED_SHA256.txt)
+
+      - name: Verify Go 1.27 identity
+        working-directory: build/sspgpt/v08/.work
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat .go-version)" = "1.27.0"
+          grep -Fx "module sspgpt/v08" go.mod
+          grep -Fx "go 1.27.0" go.mod
+          grep -Fx "toolchain go1.27.0" go.mod
+          test "$(go env GOVERSION)" = "go1.27.0"
+          go version
+
+      - name: Unit and frozen-contract tests
+        working-directory: build/sspgpt/v08/.work
+        env:
+          GOTOOLCHAIN: local
+        run: go test ./...
+
+      - name: Vet
+        working-directory: build/sspgpt/v08/.work
+        env:
+          GOTOOLCHAIN: local
+        run: go vet ./...
+
+      - name: v0.8 authority and packaging audit
+        working-directory: build/sspgpt/v08/.work
+        run: python3 tools/v08_architecture_audit.py
+
+  build-and-forge:
+    name: Forge Windows ${{ matrix.arch }}
+    needs: contract-validation
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, "386"]
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: '1.27.0'
+          cache: false
+
+      - name: Expand and verify release inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          unzip -oq "$V08_ROOT/source.zip" -d "$WORK"
+          unzip -t "$V08_ROOT/source.zip" >/dev/null
+          (cd "$V08_ROOT" && sha256sum -c HOST_SEED_SHA256.txt)
+          test "$(go env GOVERSION)" = "go1.27.0"
+          go tool dist list | grep -Fx "windows/${{ matrix.arch }}"
+
+      - name: Stage authored SSP/YAYA host assets
+        working-directory: build/sspgpt/v08/.work
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .ci-stage artifact
+          mkdir -p .ci-stage artifact
+          cp -a package/. .ci-stage/
+          unzip -oq ../assets/host_seed.zip -d .ci-stage
+          test -f .ci-stage/ghost/master/yaya.dll
+          test -f .ci-stage/shell/master/surfaces.txt
+          test -f .ci-stage/ghost/master/sspgpt_host.dic
+          test -f .ci-stage/ghost/master/sspgpt_touch.dic
+          test -f .ci-stage/ghost/master/sspgpt_presentation.dic
+
+      - name: Cross-build exactly five SSPGPT services
+        working-directory: build/sspgpt/v08/.work
+        env:
+          GOTOOLCHAIN: local
+          CGO_ENABLED: '0'
+          GOOS: windows
+          GOARCH: ${{ matrix.arch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .ci-stage/ghost/master/{runtime,bridge,memory,behavior,touch}
+          ldflags='-s -w -H=windowsgui'
+          go build -trimpath -ldflags="$ldflags" -o .ci-stage/ghost/master/runtime/SSPGPTRuntime.exe ./cmd/runtime
+          go build -trimpath -ldflags="$ldflags" -o .ci-stage/ghost/master/bridge/SSPGPTBridge.exe ./cmd/bridge
+          go build -trimpath -ldflags="$ldflags" -o .ci-stage/ghost/master/memory/SSPGPTMemoryService.exe ./cmd/memory
+          go build -trimpath -ldflags="$ldflags" -o .ci-stage/ghost/master/behavior/SSPGPTBehaviorService.exe ./cmd/behavior
+          go build -trimpath -ldflags="$ldflags" -o .ci-stage/ghost/master/touch/SSPGPTTouchProgress.exe ./cmd/touch
+          test "$(find .ci-stage/ghost/master -type f -name 'SSPGPT*.exe' | wc -l)" -eq 5
+
+      - name: Verify PE architecture and GUI subsystem
+        working-directory: build/sspgpt/v08/.work
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "${{ matrix.arch }}" $(find .ci-stage/ghost/master -type f -name 'SSPGPT*.exe' | sort) <<'PY'
+          import struct, sys
+          expected = {"amd64": 0x8664, "386": 0x014c}[sys.argv[1]]
+          for name in sys.argv[2:]:
+              b = open(name, "rb").read()
+              assert b[:2] == b"MZ", name
+              pe = struct.unpack_from("<I", b, 0x3c)[0]
+              assert b[pe:pe+4] == b"PE\0\0", name
+              machine = struct.unpack_from("<H", b, pe+4)[0]
+              opt = pe + 24
+              subsystem = struct.unpack_from("<H", b, opt+68)[0]
+              assert machine == expected, (name, hex(machine), hex(expected))
+              assert subsystem == 2, (name, "subsystem", subsystem)
+              print("WINDOWS_BINARY_AUDIT=PASS", sys.argv[1], name)
+          PY
+
+      - name: Verify Go build provenance
+        working-directory: build/sspgpt/v08/.work
+        shell: bash
+        run: |
+          set -euo pipefail
+          go version > artifact/GO_VERSION.txt
+          go env GOVERSION >> artifact/GO_VERSION.txt
+          printf '%s\n' "${GITHUB_SHA}" > artifact/GIT_COMMIT.txt
+          : > artifact/GO_BUILDINFO.txt
+          while IFS= read -r f; do
+            echo "===== $f =====" >> artifact/GO_BUILDINFO.txt
+            go version -m "$f" >> artifact/GO_BUILDINFO.txt
+          done < <(find .ci-stage/ghost/master -type f -name 'SSPGPT*.exe' | sort)
+          test "$(grep -c '^===== ' artifact/GO_BUILDINFO.txt)" -eq 5
+          test "$(grep -c 'go1.27.0' artifact/GO_BUILDINFO.txt)" -ge 5
+          grep -q 'sspgpt/v08/cmd/runtime' artifact/GO_BUILDINFO.txt
+          grep -q 'sspgpt/v08/cmd/bridge' artifact/GO_BUILDINFO.txt
+          grep -q 'sspgpt/v08/cmd/memory' artifact/GO_BUILDINFO.txt
+          grep -q 'sspgpt/v08/cmd/behavior' artifact/GO_BUILDINFO.txt
+          grep -q 'sspgpt/v08/cmd/touch' artifact/GO_BUILDINFO.txt
+
+      - name: Forge and inspect clean public NAR
+        working-directory: build/sspgpt/v08/.work
+        shell: bash
+        run: |
+          set -euo pipefail
+          nar="artifact/SSPGPT_v0.8_First_Alchemy_go1.27.0_windows-${{ matrix.arch }}.nar"
+          python3 tools/build_release.py .ci-stage "$nar"
+          python3 tools/verify_release.py "$nar" "${{ matrix.arch }}"
+          sha256sum "$nar" > artifact/SHA256SUMS.txt
+          find .ci-stage/ghost/master -type f -name 'SSPGPT*.exe' -print0 | sort -z | xargs -0 sha256sum >> artifact/SHA256SUMS.txt
+          if unzip -Z1 "$nar" | grep -Eiq '(^|/)profile/|(^|/)Plug/|CharacterGPT|SSPGPTProviderService\.exe|(^|/)(secrets|audit)/'; then
+            echo 'forbidden public-release content detected' >&2
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: SSPGPT-v08-first-alchemy-go127-windows-${{ matrix.arch }}
+          path: build/sspgpt/v08/.work/artifact
+          if-no-files-found: error
+          retention-days: 30
