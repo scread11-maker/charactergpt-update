@@ -24,6 +24,7 @@ env:
   GO_VERSION: '1.27.0'
   V08_ROOT: build/sspgpt/v08
   WORK: build/sspgpt/v08/.work
+  SOURCE_SHA256: 416a3176adb794b8e936a740d7f859bcce67e90a1f547f5167a3980867131410
 
 jobs:
   contract-validation:
@@ -31,21 +32,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
-
       - uses: actions/setup-go@v7.0.0
         with:
           go-version: '1.27.0'
           cache: false
 
-      - name: Expand pinned v0.8 source
+      - name: Reconstruct pinned v0.8 source
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          unzip -oq "$V08_ROOT/source.zip" -d "$WORK"
-          unzip -t "$V08_ROOT/source.zip" >/dev/null
-          (cd "$V08_ROOT" && sha256sum -c HOST_SEED_SHA256.txt)
+          archive="$RUNNER_TEMP/sspgpt-v08-source.zip"
+          cat \
+            "$V08_ROOT/source_chunks/part00.b64" \
+            "$V08_ROOT/source_chunks/part01.b64" \
+            "$V08_ROOT/source_parts/part01.b64" \
+            "$V08_ROOT/source_parts/part02.b64" \
+            "$V08_ROOT/source_parts/part03.b64" \
+            "$V08_ROOT/source_chunks/part08.b64" \
+            "$V08_ROOT/source_chunks/part09.b64" \
+            "$V08_ROOT/source_chunks/part10.b64" \
+            "$V08_ROOT/source_chunks/part11.b64" \
+            | base64 -d > "$archive"
+          echo "$SOURCE_SHA256  $archive" | sha256sum -c -
+          unzip -t "$archive" >/dev/null
+          rm -rf "$WORK" && mkdir -p "$WORK"
+          unzip -oq "$archive" -d "$WORK"
 
       - name: Verify Go 1.27 identity
         working-directory: build/sspgpt/v08/.work
@@ -71,12 +82,12 @@ jobs:
           GOTOOLCHAIN: local
         run: go vet ./...
 
-      - name: v0.8 authority and packaging audit
+      - name: v0.8 authority audit
         working-directory: build/sspgpt/v08/.work
         run: python3 tools/v08_architecture_audit.py
 
-  build-and-forge:
-    name: Forge Windows ${{ matrix.arch }}
+  build:
+    name: Windows ${{ matrix.arch }} provenance build
     needs: contract-validation
     runs-on: ubuntu-latest
     strategy:
@@ -85,38 +96,33 @@ jobs:
         arch: [amd64, "386"]
     steps:
       - uses: actions/checkout@v7.0.1
-
       - uses: actions/setup-go@v7.0.0
         with:
           go-version: '1.27.0'
           cache: false
 
-      - name: Expand and verify release inputs
+      - name: Reconstruct verified source
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          unzip -oq "$V08_ROOT/source.zip" -d "$WORK"
-          unzip -t "$V08_ROOT/source.zip" >/dev/null
-          (cd "$V08_ROOT" && sha256sum -c HOST_SEED_SHA256.txt)
+          archive="$RUNNER_TEMP/sspgpt-v08-source.zip"
+          cat \
+            "$V08_ROOT/source_chunks/part00.b64" \
+            "$V08_ROOT/source_chunks/part01.b64" \
+            "$V08_ROOT/source_parts/part01.b64" \
+            "$V08_ROOT/source_parts/part02.b64" \
+            "$V08_ROOT/source_parts/part03.b64" \
+            "$V08_ROOT/source_chunks/part08.b64" \
+            "$V08_ROOT/source_chunks/part09.b64" \
+            "$V08_ROOT/source_chunks/part10.b64" \
+            "$V08_ROOT/source_chunks/part11.b64" \
+            | base64 -d > "$archive"
+          echo "$SOURCE_SHA256  $archive" | sha256sum -c -
+          unzip -t "$archive" >/dev/null
+          rm -rf "$WORK" && mkdir -p "$WORK"
+          unzip -oq "$archive" -d "$WORK"
           test "$(go env GOVERSION)" = "go1.27.0"
           go tool dist list | grep -Fx "windows/${{ matrix.arch }}"
-
-      - name: Stage authored SSP/YAYA host assets
-        working-directory: build/sspgpt/v08/.work
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf .ci-stage artifact
-          mkdir -p .ci-stage artifact
-          cp -a package/. .ci-stage/
-          unzip -oq ../assets/host_seed.zip -d .ci-stage
-          test -f .ci-stage/ghost/master/yaya.dll
-          test -f .ci-stage/shell/master/surfaces.txt
-          test -f .ci-stage/ghost/master/sspgpt_host.dic
-          test -f .ci-stage/ghost/master/sspgpt_touch.dic
-          test -f .ci-stage/ghost/master/sspgpt_presentation.dic
 
       - name: Cross-build exactly five SSPGPT services
         working-directory: build/sspgpt/v08/.work
@@ -128,34 +134,33 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .ci-stage/ghost/master/{runtime,bridge,memory,behavior,touch}
+          rm -rf artifact && mkdir -p artifact/bin
           ldflags='-s -w -H=windowsgui'
-          go build -trimpath -ldflags="$ldflags" -o .ci-stage/ghost/master/runtime/SSPGPTRuntime.exe ./cmd/runtime
-          go build -trimpath -ldflags="$ldflags" -o .ci-stage/ghost/master/bridge/SSPGPTBridge.exe ./cmd/bridge
-          go build -trimpath -ldflags="$ldflags" -o .ci-stage/ghost/master/memory/SSPGPTMemoryService.exe ./cmd/memory
-          go build -trimpath -ldflags="$ldflags" -o .ci-stage/ghost/master/behavior/SSPGPTBehaviorService.exe ./cmd/behavior
-          go build -trimpath -ldflags="$ldflags" -o .ci-stage/ghost/master/touch/SSPGPTTouchProgress.exe ./cmd/touch
-          test "$(find .ci-stage/ghost/master -type f -name 'SSPGPT*.exe' | wc -l)" -eq 5
+          go build -trimpath -ldflags="$ldflags" -o artifact/bin/SSPGPTRuntime.exe ./cmd/runtime
+          go build -trimpath -ldflags="$ldflags" -o artifact/bin/SSPGPTBridge.exe ./cmd/bridge
+          go build -trimpath -ldflags="$ldflags" -o artifact/bin/SSPGPTMemoryService.exe ./cmd/memory
+          go build -trimpath -ldflags="$ldflags" -o artifact/bin/SSPGPTBehaviorService.exe ./cmd/behavior
+          go build -trimpath -ldflags="$ldflags" -o artifact/bin/SSPGPTTouchProgress.exe ./cmd/touch
+          test "$(find artifact/bin -maxdepth 1 -type f -name 'SSPGPT*.exe' | wc -l)" -eq 5
 
       - name: Verify PE architecture and GUI subsystem
         working-directory: build/sspgpt/v08/.work
         shell: bash
         run: |
-          set -euo pipefail
-          python3 - "${{ matrix.arch }}" $(find .ci-stage/ghost/master -type f -name 'SSPGPT*.exe' | sort) <<'PY'
+          python3 - "${{ matrix.arch }}" artifact/bin/*.exe <<'PY'
           import struct, sys
-          expected = {"amd64": 0x8664, "386": 0x014c}[sys.argv[1]]
+          expected={"amd64":0x8664,"386":0x014c}[sys.argv[1]]
+          assert len(sys.argv[2:]) == 5
           for name in sys.argv[2:]:
-              b = open(name, "rb").read()
-              assert b[:2] == b"MZ", name
-              pe = struct.unpack_from("<I", b, 0x3c)[0]
-              assert b[pe:pe+4] == b"PE\0\0", name
-              machine = struct.unpack_from("<H", b, pe+4)[0]
-              opt = pe + 24
-              subsystem = struct.unpack_from("<H", b, opt+68)[0]
-              assert machine == expected, (name, hex(machine), hex(expected))
-              assert subsystem == 2, (name, "subsystem", subsystem)
-              print("WINDOWS_BINARY_AUDIT=PASS", sys.argv[1], name)
+              b=open(name,'rb').read()
+              assert b[:2]==b'MZ', name
+              pe=struct.unpack_from('<I',b,0x3c)[0]
+              assert b[pe:pe+4]==b'PE\0\0', name
+              machine=struct.unpack_from('<H',b,pe+4)[0]
+              subsystem=struct.unpack_from('<H',b,pe+24+68)[0]
+              assert machine==expected,(name,hex(machine),hex(expected))
+              assert subsystem==2,(name,subsystem)
+              print('WINDOWS_BINARY_AUDIT=PASS',sys.argv[1],name)
           PY
 
       - name: Verify Go build provenance
@@ -165,38 +170,23 @@ jobs:
           set -euo pipefail
           go version > artifact/GO_VERSION.txt
           go env GOVERSION >> artifact/GO_VERSION.txt
-          printf '%s\n' "${GITHUB_SHA}" > artifact/GIT_COMMIT.txt
+          printf '%s\n' "$GITHUB_SHA" > artifact/GIT_COMMIT.txt
+          printf '%s\n' "$SOURCE_SHA256" > artifact/SOURCE_SHA256.txt
           : > artifact/GO_BUILDINFO.txt
-          while IFS= read -r f; do
+          for f in artifact/bin/*.exe; do
             echo "===== $f =====" >> artifact/GO_BUILDINFO.txt
             go version -m "$f" >> artifact/GO_BUILDINFO.txt
-          done < <(find .ci-stage/ghost/master -type f -name 'SSPGPT*.exe' | sort)
+          done
           test "$(grep -c '^===== ' artifact/GO_BUILDINFO.txt)" -eq 5
           test "$(grep -c 'go1.27.0' artifact/GO_BUILDINFO.txt)" -ge 5
-          grep -q 'sspgpt/v08/cmd/runtime' artifact/GO_BUILDINFO.txt
-          grep -q 'sspgpt/v08/cmd/bridge' artifact/GO_BUILDINFO.txt
-          grep -q 'sspgpt/v08/cmd/memory' artifact/GO_BUILDINFO.txt
-          grep -q 'sspgpt/v08/cmd/behavior' artifact/GO_BUILDINFO.txt
-          grep -q 'sspgpt/v08/cmd/touch' artifact/GO_BUILDINFO.txt
-
-      - name: Forge and inspect clean public NAR
-        working-directory: build/sspgpt/v08/.work
-        shell: bash
-        run: |
-          set -euo pipefail
-          nar="artifact/SSPGPT_v0.8_First_Alchemy_go1.27.0_windows-${{ matrix.arch }}.nar"
-          python3 tools/build_release.py .ci-stage "$nar"
-          python3 tools/verify_release.py "$nar" "${{ matrix.arch }}"
-          sha256sum "$nar" > artifact/SHA256SUMS.txt
-          find .ci-stage/ghost/master -type f -name 'SSPGPT*.exe' -print0 | sort -z | xargs -0 sha256sum >> artifact/SHA256SUMS.txt
-          if unzip -Z1 "$nar" | grep -Eiq '(^|/)profile/|(^|/)Plug/|CharacterGPT|SSPGPTProviderService\.exe|(^|/)(secrets|audit)/'; then
-            echo 'forbidden public-release content detected' >&2
-            exit 1
-          fi
+          for p in runtime bridge memory behavior touch; do
+            grep -q "sspgpt/v08/cmd/$p" artifact/GO_BUILDINFO.txt
+          done
+          (cd artifact && sha256sum bin/*.exe > SHA256SUMS.txt)
 
       - uses: actions/upload-artifact@v7.0.1
         with:
-          name: SSPGPT-v08-first-alchemy-go127-windows-${{ matrix.arch }}
+          name: SSPGPT-v08-go127-windows-${{ matrix.arch }}
           path: build/sspgpt/v08/.work/artifact
           if-no-files-found: error
           retention-days: 30
