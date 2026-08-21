@@ -18,7 +18,7 @@ concurrency:
 env:
   V08_ROOT: build/sspgpt/v08
   WORK: build/sspgpt/v08/.work
-  SOURCE_SHA256: 416a3176adb794b8e936a740d7f859bcce67e90a1f547f5167a3980867131410
+  BASE_SOURCE_SHA256: 416a3176adb794b8e936a740d7f859bcce67e90a1f547f5167a3980867131410
 
 jobs:
   contract-validation:
@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
         with: {go-version: '1.27.0', cache: false}
-      - name: Reconstruct pinned v0.8 source
+      - name: Reconstruct canonical v0.8 source
         shell: bash
         run: |
           set -euo pipefail
@@ -37,10 +37,11 @@ jobs:
               "$V08_ROOT/source_parts/part01.b64" "$V08_ROOT/source_parts/part02.b64" "$V08_ROOT/source_parts/part03.b64" \
               "$V08_ROOT/source_chunks/part08.b64" "$V08_ROOT/source_chunks/part09.b64" "$V08_ROOT/source_chunks/part10.b64" "$V08_ROOT/source_chunks/part11.b64" \
               | base64 -d > "$a"
-          echo "$SOURCE_SHA256  $a" | sha256sum -c -
+          echo "$BASE_SOURCE_SHA256  $a" | sha256sum -c -
           unzip -t "$a" >/dev/null
           rm -rf "$WORK" && mkdir -p "$WORK" && unzip -oq "$a" -d "$WORK"
-          sed -i '/^toolchain go1\.27\.0$/d' "$WORK/go.mod"
+          cp "$V08_ROOT/overlays/go.mod" "$WORK/go.mod"
+          cp "$V08_ROOT/overlays/v08_architecture_audit.py" "$WORK/tools/v08_architecture_audit.py"
       - name: Verify Go 1.27 module identity and canonicality
         working-directory: build/sspgpt/v08/.work
         shell: bash
@@ -76,7 +77,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-go@v7.0.0
         with: {go-version: '1.27.0', cache: false}
-      - name: Reconstruct verified source
+      - name: Reconstruct canonical source
         shell: bash
         run: |
           set -euo pipefail
@@ -85,10 +86,11 @@ jobs:
               "$V08_ROOT/source_parts/part01.b64" "$V08_ROOT/source_parts/part02.b64" "$V08_ROOT/source_parts/part03.b64" \
               "$V08_ROOT/source_chunks/part08.b64" "$V08_ROOT/source_chunks/part09.b64" "$V08_ROOT/source_chunks/part10.b64" "$V08_ROOT/source_chunks/part11.b64" \
               | base64 -d > "$a"
-          echo "$SOURCE_SHA256  $a" | sha256sum -c -
+          echo "$BASE_SOURCE_SHA256  $a" | sha256sum -c -
           rm -rf "$WORK" && mkdir -p "$WORK" && unzip -oq "$a" -d "$WORK"
-          sed -i '/^toolchain go1\.27\.0$/d' "$WORK/go.mod"
-          (cd "$WORK" && go mod tidy -diff)
+          cp "$V08_ROOT/overlays/go.mod" "$WORK/go.mod"
+          cp "$V08_ROOT/overlays/v08_architecture_audit.py" "$WORK/tools/v08_architecture_audit.py"
+          (cd "$WORK" && go mod tidy -diff && python3 tools/v08_architecture_audit.py)
           test "$(go env GOVERSION)" = 'go1.27.0'
           go tool dist list | grep -Fx "windows/${{ matrix.arch }}"
       - name: Cross-build exactly five SSPGPT services
@@ -127,8 +129,8 @@ jobs:
           set -euo pipefail
           { go version; go env GOVERSION; } > artifact/GO_VERSION.txt
           printf '%s\n' "$GITHUB_SHA" > artifact/GIT_COMMIT.txt
-          printf '%s\n' "$SOURCE_SHA256" > artifact/BASE_SOURCE_SHA256.txt
-          printf '%s\n' 'canonical overlay: remove redundant toolchain go1.27.0 (Go 1.27 tidy)' > artifact/SOURCE_OVERLAY.txt
+          printf '%s\n' "$BASE_SOURCE_SHA256" > artifact/BASE_SOURCE_SHA256.txt
+          sha256sum go.mod tools/v08_architecture_audit.py > artifact/CANONICAL_OVERLAY_SHA256.txt
           : > artifact/GO_BUILDINFO.txt
           for f in artifact/bin/*.exe; do echo "===== $f =====" >> artifact/GO_BUILDINFO.txt; go version -m "$f" >> artifact/GO_BUILDINFO.txt; done
           test "$(grep -c '^===== ' artifact/GO_BUILDINFO.txt)" -eq 5
