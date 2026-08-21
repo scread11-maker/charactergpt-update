@@ -15,7 +15,7 @@ This directory is the active fresh v0.8 implementation generated from the frozen
 
 The base v0.8 source snapshot is reconstructed from the versioned text chunks referenced by `.github/workflows/sspgpt-v08-go127.yml` and is pinned by SHA-256. `overlays/` contains the small canonical corrections discovered during Go 1.27 acceptance; the effective source must pass `go mod tidy -diff`, frozen-contract tests, `go vet`, and the v0.8 authority audit before any Windows binary is produced.
 
-Binary SSP host assets (`yaya.dll` and authored shell artwork) are deliberately not transported through this source CI path. Release assembly uses the independently pinned host seed identified by `HOST_SEED_SHA256.txt`, then combines that host with the CI-proven SSPGPT service binaries. This keeps binary transport concerns separate from cognition-source provenance.
+Binary SSP host assets (`yaya.dll` and authored shell artwork) are deliberately not transported through this source CI path. Release assembly uses the independently pinned host seed identified by `HOST_SEED_SHA256.txt` (SHA-256 `85d3a492a51594ac67ad4f3453ad9fbf0455e8671f758ccc9e94eeb7f92a9acc`), then combines that host with the CI-proven SSPGPT service binaries. This keeps binary transport concerns separate from cognition-source provenance.
 
 Live `profile/**`, Plug/MCP, credentials, logs, audit state and other mutable/private state are not First Alchemy public-release inputs.
 
