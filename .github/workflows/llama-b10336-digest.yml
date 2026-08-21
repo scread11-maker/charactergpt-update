@@ -1,7 +1,7 @@
 name: llama.cpp b10336 digest probe
 on:
-  push:
-    branches: [ci/v08-go127-acceptance]
+  pull_request:
+    branches: [main]
     paths: ['.github/workflows/llama-b10336-digest.yml']
 permissions:
   contents: read
