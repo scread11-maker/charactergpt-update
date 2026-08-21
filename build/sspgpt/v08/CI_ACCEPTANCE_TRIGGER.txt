@@ -1,1 +1,0 @@
-Temporary pull-request trigger used to exercise the SSPGPT v0.8 Go 1.27 acceptance workflow. This file is not part of the release package.
