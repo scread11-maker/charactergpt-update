@@ -1,0 +1,48 @@
+name: Cleanup obsolete development branches once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/_cleanup-obsolete-branches-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete obsolete branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branches=(
+            'build/fix14-go1265-ci'
+            'build/go1265-ci-final'
+            'ci/v08-go127-acceptance'
+            'fix14a-memory-quarantine-bootstrap'
+            'fix14b-go1266'
+            'fix15-mcp-rebuild'
+            'fix15a-mcp-turn-facade'
+            'nar-delivery'
+            'promotion/fix14-go1265-readable'
+            'promotion/fix14a-memory-quarantine'
+          )
+          for branch in "${branches[@]}"; do
+            ref="heads/${branch}"
+            code="$(curl -sS -o /tmp/delete.out -w '%{http_code}' \
+              -X DELETE \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${REPO}/git/refs/${ref}")"
+            case "$code" in
+              204) echo "deleted: $branch" ;;
+              422) echo "already absent/protected: $branch" ;;
+              *) cat /tmp/delete.out >&2; echo "delete failed ($code): $branch" >&2; exit 1 ;;
+            esac
+          done
