@@ -51,6 +51,23 @@ jobs:
           go mod tidy -diff
           go version
 
+      - name: Materialize non-release test fixtures
+        working-directory: build/sspgpt/v08-r5/source
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The repair source tree intentionally omits large/binary release assets.
+          # These fixtures satisfy source-level tests only; they are not NAR inputs.
+          mkdir -p ghost/master/models/packages
+          : > ghost/master/yaya.dll
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          p = Path('ghost/master/models/packages/llama-b10336-runtime-win-cpu-x64.zip')
+          with zipfile.ZipFile(p, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+              z.writestr('llama-server.exe', b'CI fixture only; not a release runner')
+          PY
+
       - name: Unit and contract tests
         working-directory: build/sspgpt/v08-r5/source
         env:
