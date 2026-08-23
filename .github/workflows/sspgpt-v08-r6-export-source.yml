@@ -20,16 +20,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
-      - name: Expand pinned v0.8 source
+      - name: Decode and expand pinned v0.8 source
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf expanded-source
+          rm -rf expanded-source /tmp/sspgpt-source.zip
           mkdir expanded-source
-          unzip -oq build/sspgpt/v08/source.zip -d expanded-source
-          unzip -t build/sspgpt/v08/source.zip >/dev/null
+          if head -c 5 build/sspgpt/v08/source.zip | grep -q '^UEsDB'; then
+            tr -d '\r\n' < build/sspgpt/v08/source.zip | base64 -d > /tmp/sspgpt-source.zip
+          else
+            cp build/sspgpt/v08/source.zip /tmp/sspgpt-source.zip
+          fi
+          unzip -t /tmp/sspgpt-source.zip >/dev/null
+          unzip -oq /tmp/sspgpt-source.zip -d expanded-source
           find expanded-source -type f -print | sort > expanded-source/FILELIST.txt
-          sha256sum build/sspgpt/v08/source.zip > expanded-source/PINNED_SOURCE_SHA256.txt
+          sha256sum build/sspgpt/v08/source.zip > expanded-source/PINNED_CONTAINER_SHA256.txt
+          sha256sum /tmp/sspgpt-source.zip > expanded-source/DECODED_SOURCE_SHA256.txt
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: sspgpt-v08-pinned-source-expanded
