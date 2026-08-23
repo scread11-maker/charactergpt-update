@@ -2,43 +2,33 @@ name: SSPGPT v0.8 R6 Export Pinned Source
 
 on:
   push:
-    branches:
-      - v08-r6-repair-20260823
-    paths:
-      - '.github/workflows/sspgpt-v08-r6-export-source.yml'
+    branches: [v08-r6-repair-20260823]
+    paths: ['.github/workflows/sspgpt-v08-r6-export-source.yml']
   pull_request:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/sspgpt-v08-r6-export-source.yml'
+    branches: [main]
+    paths: ['.github/workflows/sspgpt-v08-r6-export-source.yml']
 
 permissions:
   contents: read
 
 jobs:
-  export:
+  diagnose:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
-      - name: Decode and expand pinned v0.8 source
+      - name: Diagnose pinned source container
         shell: bash
         run: |
-          set -euo pipefail
-          rm -rf expanded-source /tmp/sspgpt-source.zip
-          mkdir expanded-source
-          if head -c 5 build/sspgpt/v08/source.zip | grep -q '^UEsDB'; then
-            tr -d '\r\n' < build/sspgpt/v08/source.zip | base64 -d > /tmp/sspgpt-source.zip
-          else
-            cp build/sspgpt/v08/source.zip /tmp/sspgpt-source.zip
-          fi
-          unzip -t /tmp/sspgpt-source.zip >/dev/null
-          unzip -oq /tmp/sspgpt-source.zip -d expanded-source
-          find expanded-source -type f -print | sort > expanded-source/FILELIST.txt
-          sha256sum build/sspgpt/v08/source.zip > expanded-source/PINNED_CONTAINER_SHA256.txt
-          sha256sum /tmp/sspgpt-source.zip > expanded-source/DECODED_SOURCE_SHA256.txt
-      - uses: actions/upload-artifact@v7.0.1
-        with:
-          name: sspgpt-v08-pinned-source-expanded
-          path: expanded-source
-          if-no-files-found: error
-          retention-days: 1
+          set -u
+          echo "CONTAINER_BYTES=$(wc -c < build/sspgpt/v08/source.zip)"
+          sha256sum build/sspgpt/v08/source.zip
+          echo 'ELLIPSIZATION_MARKERS:'
+          grep -abo 'ELLIPSIZATION' build/sspgpt/v08/source.zip || true
+          tr -d '\r\n' < build/sspgpt/v08/source.zip | base64 -d > /tmp/decoded.zip
+          echo "DECODED_BYTES=$(wc -c < /tmp/decoded.zip)"
+          sha256sum /tmp/decoded.zip
+          file /tmp/decoded.zip || true
+          echo 'HEAD:'; xxd -l 32 /tmp/decoded.zip || true
+          echo 'TAIL:'; tail -c 64 /tmp/decoded.zip | xxd || true
+          echo 'ZIP_TEST:'
+          unzip -t /tmp/decoded.zip || true
