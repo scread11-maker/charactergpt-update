@@ -1,0 +1,172 @@
+name: SSPGPT v0.8 r5 Go 1.27 Repair Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/v08-r5-go127-repair
+    paths:
+      - '.github/workflows/sspgpt-v08-r5-go127-repair.yml'
+      - 'build/sspgpt/v08-r5/seed/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sspgpt-v08-r5-go127-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.27.0'
+  SOURCE_ROOT: build/sspgpt/v08-r5/source
+  SOURCE_ARCHIVE_SHA256: dec8d9aa7942ed84da102ebfe7f35313cbd38cf0d17a167a38f3883ffb90223f
+
+jobs:
+  source-gate:
+    name: Go 1.27 source gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Materialize exact repair source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$SOURCE_ROOT"
+          mkdir -p "$SOURCE_ROOT"
+          cat build/sspgpt/v08-r5/seed/part* | base64 -d > /tmp/v08-r5-source.tar.xz
+          echo "$SOURCE_ARCHIVE_SHA256  /tmp/v08-r5-source.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/v08-r5-source.tar.xz -C "$SOURCE_ROOT"
+          test -f "$SOURCE_ROOT/go.mod"
+          test -d "$SOURCE_ROOT/cmd/runtime"
+          test -d "$SOURCE_ROOT/cmd/bridge"
+          test -d "$SOURCE_ROOT/cmd/memoryservice"
+          test -d "$SOURCE_ROOT/cmd/behaviorservice"
+          test -d "$SOURCE_ROOT/cmd/touchprogress"
+
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: '1.27.0'
+          cache: false
+
+      - name: Verify Go 1.27 module baseline
+        working-directory: build/sspgpt/v08-r5/source
+        shell: bash
+        env:
+          GOTOOLCHAIN: local
+        run: |
+          set -euo pipefail
+          grep -Fx 'module sspgpt/v08' go.mod
+          grep -Fx 'go 1.27.0' go.mod
+          ! grep -q '^toolchain ' go.mod
+          test "$(go env GOVERSION)" = 'go1.27.0'
+          go mod tidy -diff
+          go version
+
+      - name: Compile tests and packages
+        working-directory: build/sspgpt/v08-r5/source
+        env:
+          GOTOOLCHAIN: local
+        run: go test -count=1 ./...
+
+      - name: Vet
+        working-directory: build/sspgpt/v08-r5/source
+        env:
+          GOTOOLCHAIN: local
+        run: go vet ./...
+
+  windows-build:
+    name: Windows ${{ matrix.arch }} five-EXE repair build
+    needs: source-gate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, "386"]
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Materialize exact repair source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$SOURCE_ROOT"
+          mkdir -p "$SOURCE_ROOT"
+          cat build/sspgpt/v08-r5/seed/part* | base64 -d > /tmp/v08-r5-source.tar.xz
+          echo "$SOURCE_ARCHIVE_SHA256  /tmp/v08-r5-source.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/v08-r5-source.tar.xz -C "$SOURCE_ROOT"
+
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version: '1.27.0'
+          cache: false
+
+      - name: Cross-build five GUI executables
+        working-directory: build/sspgpt/v08-r5/source
+        env:
+          GOTOOLCHAIN: local
+          CGO_ENABLED: '0'
+          GOOS: windows
+          GOARCH: ${{ matrix.arch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(go env GOVERSION)" = 'go1.27.0'
+          out="artifact/windows-${{ matrix.arch }}"
+          rm -rf artifact
+          mkdir -p "$out"
+          go build -buildvcs=false -trimpath '-ldflags=-H=windowsgui' -o "$out/SSPGPTRuntime.exe" ./cmd/runtime
+          go build -buildvcs=false -trimpath '-ldflags=-H=windowsgui' -o "$out/SSPGPTBridge.exe" ./cmd/bridge
+          go build -buildvcs=false -trimpath '-ldflags=-H=windowsgui' -o "$out/SSPGPTMemoryService.exe" ./cmd/memoryservice
+          go build -buildvcs=false -trimpath '-ldflags=-H=windowsgui' -o "$out/SSPGPTBehaviorService.exe" ./cmd/behaviorservice
+          go build -buildvcs=false -trimpath '-ldflags=-H=windowsgui' -o "$out/SSPGPTTouchProgress.exe" ./cmd/touchprogress
+          test "$(find "$out" -maxdepth 1 -type f -name 'SSPGPT*.exe' | wc -l)" -eq 5
+
+      - name: Verify PE GUI subsystem and machine
+        working-directory: build/sspgpt/v08-r5/source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "${{ matrix.arch }}" artifact/windows-${{ matrix.arch }}/*.exe <<'PY'
+          import struct, sys
+          expected = {'amd64': 0x8664, '386': 0x014c}[sys.argv[1]]
+          files = sys.argv[2:]
+          assert len(files) == 5, files
+          for name in files:
+              b = open(name, 'rb').read()
+              assert b[:2] == b'MZ', name
+              pe = struct.unpack_from('<I', b, 0x3c)[0]
+              assert b[pe:pe+4] == b'PE\0\0', name
+              machine = struct.unpack_from('<H', b, pe+4)[0]
+              subsystem = struct.unpack_from('<H', b, pe+24+68)[0]
+              assert machine == expected, (name, hex(machine), hex(expected))
+              assert subsystem == 2, (name, subsystem)
+              print('PE_GUI_PASS', sys.argv[1], name)
+          PY
+
+      - name: Verify Go 1.27 build metadata
+        working-directory: build/sspgpt/v08-r5/source
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="artifact/windows-${{ matrix.arch }}"
+          : > "$out/GO_BUILDINFO.txt"
+          for f in "$out"/*.exe; do
+            echo "===== $f =====" >> "$out/GO_BUILDINFO.txt"
+            go version -m "$f" >> "$out/GO_BUILDINFO.txt"
+          done
+          test "$(grep -c '^===== ' "$out/GO_BUILDINFO.txt")" -eq 5
+          test "$(grep -c 'go1.27.0' "$out/GO_BUILDINFO.txt")" -ge 5
+          grep -q 'sspgpt/v08/cmd/runtime' "$out/GO_BUILDINFO.txt"
+          grep -q 'sspgpt/v08/cmd/bridge' "$out/GO_BUILDINFO.txt"
+          grep -q 'sspgpt/v08/cmd/memoryservice' "$out/GO_BUILDINFO.txt"
+          grep -q 'sspgpt/v08/cmd/behaviorservice' "$out/GO_BUILDINFO.txt"
+          grep -q 'sspgpt/v08/cmd/touchprogress' "$out/GO_BUILDINFO.txt"
+          sha256sum "$out"/*.exe > "$out/SHA256SUMS.txt"
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: SSPGPT-v08-go127-${{ matrix.arch }}-repair
+          path: build/sspgpt/v08-r5/source/artifact/windows-${{ matrix.arch }}
+          if-no-files-found: error
+          retention-days: 14

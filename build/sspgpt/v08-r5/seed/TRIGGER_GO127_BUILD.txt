@@ -1,0 +1,2 @@
+SSPGPT v0.8 repaired five-EXE Go 1.27 build trigger.
+Source archive SHA-256: dec8d9aa7942ed84da102ebfe7f35313cbd38cf0d17a167a38f3883ffb90223f
