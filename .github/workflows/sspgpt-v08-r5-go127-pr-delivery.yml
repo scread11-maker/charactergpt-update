@@ -10,7 +10,7 @@ permissions:
 
 env:
   SOURCE_ROOT: build/sspgpt/v08-r5/source
-  SOURCE_ARCHIVE_SHA256: dec8d9aa7942ed84da102ebfe7f35313cbd38cf0d17a167a38f3883ffb90223f
+  SOURCE_ARCHIVE_SHA256: 364ddaffe7c4e308d9c823ab80d80d0b2ebc70aacfb93178855d39cda09591e3
 
 jobs:
   verify-and-build:
@@ -25,7 +25,7 @@ jobs:
           set -euo pipefail
           rm -rf "$SOURCE_ROOT"
           mkdir -p "$SOURCE_ROOT"
-          cat build/sspgpt/v08-r5/seed/part* | base64 -d > /tmp/v08-r5-source.tar.xz
+          base64 -d build/sspgpt/v08-r5/seed/repair_of_repair.b64 > /tmp/v08-r5-source.tar.xz
           echo "$SOURCE_ARCHIVE_SHA256  /tmp/v08-r5-source.tar.xz" | sha256sum -c -
           tar -xJf /tmp/v08-r5-source.tar.xz -C "$SOURCE_ROOT"
           test -f "$SOURCE_ROOT/go.mod"
@@ -117,7 +117,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7.0.1
         with:
-          name: SSPGPT-v08-go127-amd64-repair-delivery
+          name: SSPGPT-v08-go127-amd64-repair-of-repair
           path: build/sspgpt/v08-r5/source/artifact/windows-amd64
           if-no-files-found: error
           retention-days: 14
