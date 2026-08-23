@@ -6,6 +6,11 @@ on:
       - v08-r6-repair-20260823
     paths:
       - '.github/workflows/sspgpt-v08-r6-export-source.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/sspgpt-v08-r6-export-source.yml'
 
 permissions:
   contents: read
