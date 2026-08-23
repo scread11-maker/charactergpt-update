@@ -1,0 +1,79 @@
+--- a/internal/servicehost/http.go
++++ b/internal/servicehost/http.go
+@@ -18,12 +18,10 @@
+ )
+ 
+ type Health struct {
+-	Service           string    `json:"service"`
+-	Status            string    `json:"status"`
+-	Version           string    `json:"version"`
+-	Time              time.Time `json:"time"`
+-	PID               int       `json:"pid"`
+-	ProcessInstanceID string    `json:"process_instance_id"`
++	Service string    `json:"service"`
++	Status  string    `json:"status"`
++	Version string    `json:"version"`
++	Time    time.Time `json:"time"`
+ }
+ 
+ func JSON(w http.ResponseWriter, status int, v any) {
+@@ -86,10 +84,7 @@
+ func ServeWithOptions(service, addr string, mux *http.ServeMux, hook ShutdownHook, options ServeOptions) error {
+ 	options = options.withDefaults()
+ 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+-		JSON(w, http.StatusOK, Health{
+-			Service: service, Status: "ready", Version: "0.8.0", Time: time.Now().UTC(),
+-			PID: os.Getpid(), ProcessInstanceID: processInstanceID,
+-		})
++		JSON(w, http.StatusOK, Health{service, "ready", "0.8.0", time.Now().UTC()})
+ 	})
+ 	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 3 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 2 * time.Minute, IdleTimeout: 30 * time.Second}
+ 	sigctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+--- a/internal/runtime/service.go
++++ b/internal/runtime/service.go
+@@ -1080,24 +1080,6 @@
+ 	}
+ }
+ 
+-// HostActionStepForYAYA returns the exact canonical step Runtime already
+-// validated and registered. It does not execute Host behavior; YAYA remains
+-// the SSP/SakuraScript composition authority. The lookup is deliberately
+-// bound to plan/request/causation identity so an unplanned action cannot be
+-// materialized through this convenience surface.
+-func (s *Service) HostActionStepForYAYA(planID, actionID, requestID, causationID string) (abi.HostActionPlanStep, error) {
+-	s.mu.Lock()
+-	planned, ok := s.plannedHostActions[actionID]
+-	s.mu.Unlock()
+-	if !ok || planned.PlanID != planID || planned.RequestID != requestID || planned.CausationID != causationID {
+-		return abi.HostActionPlanStep{}, errors.New("Host action was not planned by Runtime")
+-	}
+-	return abi.HostActionPlanStep{
+-		ActionID: actionID, CapabilityID: planned.CapabilityID, TypedParameters: planned.TypedParameters,
+-		StartRelationOrDelay: planned.StartRelationOrDelay, Deadline: planned.Deadline,
+-	}, nil
+-}
+-
+ // ObserveYAYAHostAction closes only an action that Runtime actually planned.
+ // Stable action IDs make duplicate Host delivery a re-ACK rather than a second
+ // visible execution/evidence event.
+@@ -1676,20 +1658,6 @@
+ 		}
+ 		servicehost.JSON(w, http.StatusOK, map[string]any{"status": "accepted", "reacknowledged": reack, "reexecuted": false})
+ 	})
+-	mux.HandleFunc("POST /v1/yaya/host-action-step", func(w http.ResponseWriter, r *http.Request) {
+-		if err := r.ParseForm(); err != nil {
+-			servicehost.JSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_form"})
+-			return
+-		}
+-		step, err := s.HostActionStepForYAYA(
+-			r.FormValue("plan_id"), r.FormValue("action_id"), r.FormValue("request_id"), r.FormValue("causation_id"),
+-		)
+-		if err != nil {
+-			servicehost.JSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+-			return
+-		}
+-		servicehost.JSON(w, http.StatusOK, step)
+-	})
+ 	mux.HandleFunc("POST /v1/yaya/host-action-observation", func(w http.ResponseWriter, r *http.Request) {
+ 		if err := r.ParseForm(); err != nil {
+ 			servicehost.JSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_form"})
