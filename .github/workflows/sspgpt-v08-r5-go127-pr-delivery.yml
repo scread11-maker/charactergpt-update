@@ -25,7 +25,7 @@ jobs:
           set -euo pipefail
           rm -rf "$SOURCE_ROOT"
           mkdir -p "$SOURCE_ROOT"
-          base64 -d build/sspgpt/v08-r5/seed/repair_of_repair.b64 > /tmp/v08-r5-source.tar.xz
+          cat build/sspgpt/v08-r5/seed/ror_part* | base64 -d > /tmp/v08-r5-source.tar.xz
           echo "$SOURCE_ARCHIVE_SHA256  /tmp/v08-r5-source.tar.xz" | sha256sum -c -
           tar -xJf /tmp/v08-r5-source.tar.xz -C "$SOURCE_ROOT"
           test -f "$SOURCE_ROOT/go.mod"
