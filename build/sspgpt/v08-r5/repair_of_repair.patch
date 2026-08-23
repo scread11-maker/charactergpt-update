@@ -1,0 +1,219 @@
+--- a/internal/supervisor/supervisor.go
++++ b/internal/supervisor/supervisor.go
+@@ -18,7 +18,6 @@
+ 
+ const (
+ 	monitorInterval       = 2 * time.Second
+-	unhealthyThreshold    = 3
+ 	initialRestartBackoff = time.Second
+ 	maxRestartBackoff     = 15 * time.Second
+ 	startupReadyLimit     = 12 * time.Second
+@@ -139,7 +138,7 @@
+ func (s *Supervisor) monitorChild(ctx context.Context, managed *managedChild) {
+ 	child := managed.child
+ 	backoff := initialRestartBackoff
+-	unhealthy := 0
++	unhealthyLogged := false
+ 
+ 	for {
+ 		if ctx.Err() != nil || s.isStopping() {
+@@ -168,14 +167,14 @@
+ 					continue
+ 				}
+ 				backoff = initialRestartBackoff
+-				unhealthy = 0
++				unhealthyLogged = false
+ 				continue
+ 			default:
+ 			}
+ 		}
+ 
+ 		if ready(child) {
+-			unhealthy = 0
++			unhealthyLogged = false
+ 			backoff = initialRestartBackoff
+ 			if !sleepContext(ctx, monitorInterval) {
+ 				return
+@@ -183,15 +182,11 @@
+ 			continue
+ 		}
+ 
+-		unhealthy++
+-		if cmd == nil || unhealthy >= unhealthyThreshold {
+-			if cmd != nil {
+-				// The process is alive but has stopped answering its bounded health
+-				// surface. Reap only this owned child before attempting recovery.
+-				log.Printf("supervisor: %s health failed %d consecutive checks; recycling owned child", child.Name, unhealthy)
+-				_ = forceReapOwned(managed, cmd, done)
+-				managed.clearProcess(cmd)
+-			}
++		if cmd == nil {
++			// A connected/pre-existing service has disappeared (or was never
++			// available). Runtime may start its own SSPGPT child, but it does not
++			// acquire force-kill authority over an external process merely by
++			// observing a health endpoint.
+ 			if err := s.launchChild(ctx, managed); err != nil {
+ 				if ctx.Err() != nil || s.isStopping() {
+ 					return
+@@ -203,11 +198,19 @@
+ 				backoff = minDuration(backoff*2, maxRestartBackoff)
+ 				continue
+ 			}
+-			unhealthy = 0
+ 			backoff = initialRestartBackoff
++			unhealthyLogged = false
+ 			continue
+ 		}
+ 
++		// The owned process is still alive but its health surface is not ready.
++		// Degrade inward and observe; do not convert health misses into OS-level
++		// termination authority. If the process genuinely exits, the wait path
++		// above performs bounded restart recovery.
++		if !unhealthyLogged {
++			log.Printf("supervisor: %s health unavailable while process remains alive; leaving process ownership unchanged", child.Name)
++			unhealthyLogged = true
++		}
+ 		if !sleepContext(ctx, monitorInterval) {
+ 			return
+ 		}
+--- a/internal/supervisor/supervisor_test.go
++++ b/internal/supervisor/supervisor_test.go
+@@ -35,6 +35,7 @@
+ 	if os.Getenv("SSPGPT_TEST_HELPER") != "1" {
+ 		return
+ 	}
++	startedAt := time.Now()
+ 	if startFile := os.Getenv("SSPGPT_TEST_HELPER_START_FILE"); startFile != "" {
+ 		f, _ := os.OpenFile(startFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+ 		if f != nil {
+@@ -46,6 +47,13 @@
+ 	mux := http.NewServeMux()
+ 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+ 		w.Header().Set("Content-Type", "application/json")
++		if raw := os.Getenv("SSPGPT_TEST_HELPER_UNHEALTHY_AFTER_MS"); raw != "" {
++			if ms, _ := strconv.Atoi(raw); ms > 0 && time.Since(startedAt) >= time.Duration(ms)*time.Millisecond {
++				w.WriteHeader(http.StatusServiceUnavailable)
++				_ = json.NewEncoder(w).Encode(map[string]string{"service": helperServiceFromExecutable(), "status": "degraded"})
++				return
++			}
++		}
+ 		_ = json.NewEncoder(w).Encode(map[string]string{"service": helperServiceFromExecutable(), "status": "ready"})
+ 	})
+ 	mux.HandleFunc("POST /shutdown", func(w http.ResponseWriter, _ *http.Request) {
+@@ -358,3 +366,40 @@
+ 		t.Fatal("supervisor accepted a different service as the expected child")
+ 	}
+ }
++
++func TestOwnedChildHealthMissDoesNotCreateTerminationAuthority(t *testing.T) {
++	address := unusedAddress(t)
++	dir := t.TempDir()
++	path := filepath.Join(dir, "SSPGPTBridge.exe")
++	copyExecutable(t, path)
++	startFile := filepath.Join(dir, "starts.txt")
++	t.Setenv("SSPGPT_TEST_HELPER", "1")
++	t.Setenv("SSPGPT_TEST_HELPER_ADDR", address)
++	t.Setenv("SSPGPT_TEST_HELPER_SERVICE", "SSPGPTBridge")
++	t.Setenv("SSPGPT_TEST_HELPER_START_FILE", startFile)
++	t.Setenv("SSPGPT_TEST_HELPER_UNHEALTHY_AFTER_MS", "500")
++	child := Child{Name: "bridge", Path: path, Health: "http://" + address + "/health", Args: []string{"-test.run=TestSupervisorHelperProcess"}}
++	var supervisor Supervisor
++	if err := supervisor.StartAll(context.Background(), []Child{child}, dir); err != nil {
++		t.Fatal(err)
++	}
++	waitFor(t, 5*time.Second, func() bool {
++		b, _ := os.ReadFile(startFile)
++		return strings.Count(string(b), "start") == 1 && ready(child)
++	}, "child never reached initial ready state")
++
++	// Wait longer than the former three-health-miss recycle window. The owned
++	// process remains alive, so Runtime must degrade/observe rather than kill it.
++	time.Sleep(7 * time.Second)
++	b, _ := os.ReadFile(startFile)
++	if got := strings.Count(string(b), "start"); got != 1 {
++		t.Fatalf("health misses caused an owned child recycle: starts=%d", got)
++	}
++	cmd, _ := supervisor.managed[0].process()
++	if cmd == nil || cmd.ProcessState != nil {
++		t.Fatal("owned child did not remain under its original process ownership")
++	}
++	if err := supervisor.Stop(); err != nil {
++		t.Fatal(err)
++	}
++}
+--- a/internal/runtime/service.go
++++ b/internal/runtime/service.go
+@@ -41,13 +41,15 @@
+ }
+ 
+ type plannedHostAction struct {
+-	PlanID              string
+-	ActionID            string
+-	RequestID           string
+-	CausationID         string
+-	CapabilityID        string
+-	TypedParameters     map[string]any
+-	HostContextRevision uint64
++	PlanID               string
++	ActionID             string
++	RequestID            string
++	CausationID          string
++	CapabilityID         string
++	TypedParameters      map[string]any
++	StartRelationOrDelay any
++	Deadline             time.Time
++	HostContextRevision  uint64
+ }
+ 
+ type cachedBehavior struct {
+@@ -1066,7 +1068,8 @@
+ 		s.plannedHostActions[step.ActionID] = plannedHostAction{
+ 			PlanID: plan.PlanID, ActionID: step.ActionID, RequestID: plan.CausedByRequestID,
+ 			CausationID: plan.CausationID, CapabilityID: step.CapabilityID,
+-			TypedParameters: step.TypedParameters, HostContextRevision: plan.HostContextRevision,
++			TypedParameters: step.TypedParameters, StartRelationOrDelay: step.StartRelationOrDelay,
++			Deadline: step.Deadline, HostContextRevision: plan.HostContextRevision,
+ 		}
+ 		s.plannedActionOrder = append(s.plannedActionOrder, step.ActionID)
+ 	}
+--- /dev/null
++++ b/internal/runtime/host_action_plan_metadata_test.go
+@@ -0,0 +1,38 @@
++package runtime
++
++import (
++	"testing"
++	"time"
++
++	"sspgpt/v08/internal/abi"
++)
++
++func TestRegisterHostPlanPreservesCanonicalStepTimingMetadata(t *testing.T) {
++	deadline := time.Date(2026, 8, 23, 8, 0, 0, 0, time.UTC)
++	service := &Service{plannedHostActions: map[string]plannedHostAction{}}
++	plan := abi.HostActionPlan{
++		PlanID:              "plan-1",
++		CausedByRequestID:   "request-1",
++		CausationID:         "cause-1",
++		HostContextRevision: 7,
++		Steps: []abi.HostActionPlanStep{{
++			ActionID:             "action-1",
++			CapabilityID:         "capability-1",
++			TypedParameters:      map[string]any{"target": "muna"},
++			StartRelationOrDelay: map[string]any{"relation": "after_presentation", "delay_ms": float64(250)},
++			Deadline:             deadline,
++		}},
++	}
++
++	service.registerHostPlan(plan)
++	got, ok := service.plannedHostActions["action-1"]
++	if !ok {
++		t.Fatal("registered HostActionPlan step was not retained")
++	}
++	if got.StartRelationOrDelay == nil {
++		t.Fatal("start_relation_or_delay was discarded")
++	}
++	if !got.Deadline.Equal(deadline) {
++		t.Fatalf("deadline=%v want=%v", got.Deadline, deadline)
++	}
++}
