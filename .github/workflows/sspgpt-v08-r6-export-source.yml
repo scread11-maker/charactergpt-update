@@ -1,0 +1,33 @@
+name: SSPGPT v0.8 R6 Export Pinned Source
+
+on:
+  push:
+    branches:
+      - v08-r6-repair-20260823
+    paths:
+      - '.github/workflows/sspgpt-v08-r6-export-source.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Expand pinned v0.8 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf expanded-source
+          mkdir expanded-source
+          unzip -oq build/sspgpt/v08/source.zip -d expanded-source
+          unzip -t build/sspgpt/v08/source.zip >/dev/null
+          find expanded-source -type f -print | sort > expanded-source/FILELIST.txt
+          sha256sum build/sspgpt/v08/source.zip > expanded-source/PINNED_SOURCE_SHA256.txt
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: sspgpt-v08-pinned-source-expanded
+          path: expanded-source
+          if-no-files-found: error
+          retention-days: 1
